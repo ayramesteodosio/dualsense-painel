@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="face" x1="0" y1="8" x2="0" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dedcd8"/>
+    </linearGradient>
+    <linearGradient id="pad" x1="0" y1="30" x2="0" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f0ee"/>
+    </linearGradient>
+    <linearGradient id="strip" x1="0" y1="30" x2="0" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffbe6f"/>
+      <stop offset="1" stop-color="#f66a00"/>
+    </linearGradient>
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+      <feGaussianBlur stdDeviation="3.2"/>
+    </filter>
+    <filter id="soft" filterUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+  <rect x="8" y="16" width="112" height="104" rx="24" fill="#a8a6a2"/>
+  <rect x="8" y="8" width="112" height="104" rx="24" fill="url(#face)"/>
+  <path d="M38 30H90Q95 30 94.6 35Q93 66 88 84Q86.8 88 82 88H46Q41.2 88 40 84Q35 66 33.4 35Q33 30 38 30Z" fill="#9a9996" opacity="0.35" transform="translate(0 3)" filter="url(#soft)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M25.5 31Q27 66 32.5 88" stroke="#ff7800" stroke-width="10" opacity="0.55" filter="url(#glow)"/>
+    <path d="M102.5 31Q101 66 95.5 88" stroke="#ff7800" stroke-width="10" opacity="0.55" filter="url(#glow)"/>
+    <path d="M25.5 31Q27 66 32.5 88" stroke="url(#strip)" stroke-width="7.5"/>
+    <path d="M102.5 31Q101 66 95.5 88" stroke="url(#strip)" stroke-width="7.5"/>
+  </g>
+  <path d="M38 30H90Q95 30 94.6 35Q93 66 88 84Q86.8 88 82 88H46Q41.2 88 40 84Q35 66 33.4 35Q33 30 38 30Z" fill="url(#pad)" stroke="#bcbab5" stroke-width="1.5"/>
+</svg>

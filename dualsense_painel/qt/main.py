@@ -1,0 +1,139 @@
+import os
+import signal
+import sys
+
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QAction, QIcon
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
+
+from .. import plataforma
+from ..session import acquire_lock
+
+SERVER = "dualsense-painel-qt"
+APP_ID = "com.ayrames.DualSensePainel"
+
+
+def resource(*parts):
+    base = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return os.path.join(base, *parts)
+
+
+def send_command(command):
+    sock = QLocalSocket()
+    sock.connectToServer(SERVER)
+    if not sock.waitForConnected(800):
+        return False
+    sock.write(command.encode())
+    sock.flush()
+    sock.waitForBytesWritten(800)
+    sock.disconnectFromServer()
+    return True
+
+
+class AppCtl:
+    def __init__(self, app, start_mode):
+        from .janela import Janela
+        self.app = app
+        self.icon = QIcon(resource("dados", APP_ID + ".svg"))
+        app.setWindowIcon(self.icon)
+        self.tray = None
+        if QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray = QSystemTrayIcon(self.icon)
+            self.tray.setToolTip("Painel do DualSense")
+            menu = QMenu()
+            self.open_action = QAction("Abrir o painel")
+            self.open_action.triggered.connect(self.show)
+            self.mode_action = QAction("Entrar no modo carregar")
+            self.mode_action.triggered.connect(self.toggle_mode)
+            quit_action = QAction("Sair")
+            quit_action.triggered.connect(self.quit)
+            for action in (self.open_action, self.mode_action, quit_action):
+                menu.addAction(action)
+            self.menu = menu
+            self.tray.setContextMenu(menu)
+            self.tray.activated.connect(lambda reason: reason == QSystemTrayIcon.Trigger and self.show())
+            self.tray.show()
+        self.server = QLocalServer()
+        QLocalServer.removeServer(SERVER)
+        self.server.listen(SERVER)
+        self.server.newConnection.connect(self._command)
+        self.window = Janela(self)
+        self.window.show()
+        if start_mode is not None:
+            QTimer.singleShot(1500, lambda: self.window.set_charging(start_mode))
+
+    def tray_available(self):
+        return self.tray is not None
+
+    def show(self):
+        self.window.show()
+        self.window.raise_()
+        self.window.activateWindow()
+
+    def toggle_mode(self):
+        self.window.set_charging(not self.window.session.charging_mode)
+
+    def update_tray(self):
+        if self.tray:
+            on = self.window.session.charging_mode if hasattr(self, "window") else False
+            self.mode_action.setText("Voltar ao modo normal" if on else "Entrar no modo carregar")
+            pct = self.window.session.battery_pct if hasattr(self, "window") else None
+            self.tray.setToolTip("Painel do DualSense" + (f": {pct}%" if pct is not None else ""))
+
+    def notify(self, title, body):
+        if self.tray:
+            self.tray.showMessage(title, body, self.icon, 5000)
+        else:
+            self.window.toast(f"{title}. {body}")
+
+    def _command(self):
+        sock = self.server.nextPendingConnection()
+        if not sock:
+            return
+
+        def read():
+            command = bytes(sock.readAll()).decode(errors="ignore").strip()
+            if command == "carregar":
+                self.window.set_charging(True)
+            elif command == "normal":
+                self.window.set_charging(False)
+            else:
+                self.show()
+        sock.readyRead.connect(read)
+
+    def quit(self):
+        try:
+            self.window.stop_mic()
+            self.window.session.cleanup()
+        finally:
+            self.app.quit()
+
+
+def main(argv=None):
+    argv = list(sys.argv if argv is None else argv)
+    mode = True if "--carregar" in argv else False if "--normal" in argv else None
+    QApplication.setApplicationName("Painel do DualSense")
+    QApplication.setDesktopFileName(APP_ID)
+    app = QApplication([a for a in argv if a not in ("--carregar", "--normal")])
+    app.setQuitOnLastWindowClosed(False)
+    lock = acquire_lock()
+    if lock is None:
+        if send_command({True: "carregar", False: "normal"}.get(mode, "mostrar")):
+            return 0
+        QMessageBox.information(None, "Painel do DualSense", "O controle já está sendo usado pelo DualSense Studio. "
+                                                             "Feche ele para usar o painel.")
+        return 1
+    ctl = AppCtl(app, mode)
+    signal.signal(signal.SIGINT, lambda *_: ctl.quit())
+    signal.signal(signal.SIGTERM, lambda *_: ctl.quit())
+    keepalive = QTimer()
+    keepalive.timeout.connect(lambda: None)
+    keepalive.start(300)
+    code = app.exec()
+    del lock
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

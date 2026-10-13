@@ -1,0 +1,6 @@
+SUBSYSTEM=="input", KERNEL=="event*", KERNELS=="*:054C:0CE6.*", TAG+="uaccess"
+SUBSYSTEM=="input", KERNEL=="event*", KERNELS=="*:054C:0DF2.*", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="*:054C:0CE6.*", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="*:054C:0DF2.*", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="0ce6", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="0df2", TAG+="uaccess"
