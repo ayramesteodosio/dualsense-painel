@@ -52,13 +52,13 @@ class AppCtl:
             self.tray = QSystemTrayIcon(self.icon)
             self.tray.setToolTip("Painel do DualSense")
             menu = QMenu()
-            self.open_action = QAction("Abrir o painel")
+            self.open_action = QAction("Abrir o painel", menu)
             self.open_action.triggered.connect(self.show)
-            self.mode_action = QAction("Entrar no modo carregar")
+            self.mode_action = QAction("Entrar no modo carregar", menu)
             self.mode_action.triggered.connect(self.toggle_mode)
-            quit_action = QAction("Sair")
-            quit_action.triggered.connect(self.quit)
-            for action in (self.open_action, self.mode_action, quit_action):
+            self.quit_action = QAction("Sair", menu)
+            self.quit_action.triggered.connect(self.quit)
+            for action in (self.open_action, self.mode_action, self.quit_action):
                 menu.addAction(action)
             self.menu = menu
             self.tray.setContextMenu(menu)
@@ -103,7 +103,7 @@ class AppCtl:
         if not self.window.isVisible():
             self.notify(f"Versão {tag} disponível", "Abra o painel para atualizar.")
         if self.tray and not getattr(self, "acao_versao", None):
-            acao = QAction(f"Atualizar para a versão {tag}")
+            acao = QAction(f"Atualizar para a versão {tag}", self.menu)
             acao.triggered.connect(self.show)
             self.menu.insertAction(self.menu.actions()[0], acao)
             self.acao_versao = acao
