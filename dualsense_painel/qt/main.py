@@ -1,6 +1,7 @@
 import os
 import signal
 import sys
+import threading
 
 from PySide6.QtCore import QLibraryInfo, QLocale, QObject, QTimer, QTranslator, QUrl, Signal
 from PySide6.QtGui import QAction, QDesktopServices, QIcon
@@ -119,6 +120,9 @@ class AppCtl:
     def _baixado(self, caminho):
         self.window.instalando_versao(self._tag_versao)
         if atualizacao.instalar("dualsense-painel", caminho):
+            reserva = threading.Timer(6, os._exit, (0,))
+            reserva.daemon = True
+            reserva.start()
             QTimer.singleShot(600, self.quit)
         else:
             self.window.falha_versao(_("não deu para instalar sozinho"), self._abrir_versao)
@@ -185,6 +189,9 @@ class AppCtl:
 
 def main(argv=None):
     argv = list(sys.argv if argv is None else argv)
+    if segundo_plano.FLAG_SAIR in argv:
+        segundo_plano.enviar("dualsense-painel", "sair")
+        return 0
     mode = True if "--carregar" in argv else False if "--normal" in argv else None
     QApplication.setApplicationName("Painel do DualSense")
     QApplication.setDesktopFileName(APP_ID)
@@ -211,6 +218,7 @@ def main(argv=None):
             return 1
     ctl = AppCtl(app, mode, escondido)
     segundo_plano.Canal("dualsense-painel", lock, ctl.aviso.canal.emit)
+    app.aboutToQuit.connect(ctl.window.session.cleanup)
     signal.signal(signal.SIGINT, lambda *_: ctl.quit())
     signal.signal(signal.SIGTERM, lambda *_: ctl.quit())
     keepalive = QTimer()

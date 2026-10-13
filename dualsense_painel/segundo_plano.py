@@ -12,6 +12,7 @@ from . import plataforma
 APPS = {"dualsense-painel": ("Painel do DualSense", "com.ayrames.DualSensePainel"),
         "dualsense-studio": ("DualSense Studio", "com.ayrames.DualSenseStudio")}
 FLAG = "--segundo-plano"
+FLAG_SAIR = "--sair"
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 
@@ -157,7 +158,12 @@ class Canal:
                 try:
                     conexao.settimeout(2)
                     pedido = conexao.recv(256).decode("utf-8", "ignore").split()
-                    if len(pedido) == 2:
+                    if len(pedido) == 2 and pedido[1] == "sair":
+                        mesmo = pedido[0] == self.repo
+                        conexao.sendall(b"saindo" if mesmo else b"outro")
+                        if mesmo:
+                            self.ao_comando("sair")
+                    elif len(pedido) == 2:
                         resposta = "ok" if pedido[0] == self.repo else "saindo"
                         conexao.sendall(resposta.encode())
                         self.ao_comando("mostrar" if resposta == "ok" else "sair")

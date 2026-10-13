@@ -718,6 +718,9 @@ def main():
     app = App()
     argv = [a for a in sys.argv if a not in ("--carregar", "--normal", segundo_plano.FLAG)]
     mode = "carregar" if "--carregar" in sys.argv else "normal" if "--normal" in sys.argv else None
+    if segundo_plano.FLAG_SAIR in sys.argv:
+        segundo_plano.enviar("dualsense-painel", "sair")
+        return 0
     if segundo_plano.FLAG in sys.argv:
         app.register(None)
         if app.get_is_remote():

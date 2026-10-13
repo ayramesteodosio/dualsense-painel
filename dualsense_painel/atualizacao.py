@@ -136,8 +136,12 @@ def _pacote_mac():
 def instalar(repo, caminho):
     pid = os.getpid()
     if plataforma.WINDOWS:
-        subprocess.Popen([caminho, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"],
-                         creationflags=0x00000008 | 0x00000200, close_fds=True)
+        argumentos = "'/SILENT','/SUPPRESSMSGBOXES','/NORESTART','/CLOSEAPPLICATIONS','/FORCECLOSEAPPLICATIONS'"
+        instalador = caminho.replace("'", "''")
+        script = (f"Wait-Process -Id {pid} -Timeout 30 -ErrorAction SilentlyContinue; "
+                  f"Start-Sleep -Milliseconds 500; Start-Process -FilePath '{instalador}' -ArgumentList {argumentos}")
+        subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script],
+                         creationflags=0x08000000 | 0x00000200, close_fds=True)
         return True
     if plataforma.MACOS:
         pacote = _pacote_mac()

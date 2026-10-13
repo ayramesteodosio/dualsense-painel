@@ -106,6 +106,7 @@ class CanalTest(unittest.TestCase):
                     threading.Thread(target=soltar).start()
 
             sp.Canal("dualsense-painel", lock, ao_comando)
+            self.assertEqual(sp.enviar("dualsense-studio", "sair"), "outro")
             self.assertEqual(sp.obter_controle("dualsense-painel"), ("mostrado", None))
             self.assertEqual(sp.obter_controle("dualsense-studio", escondido=True), ("ocupado", None))
             estado, novo = sp.obter_controle("dualsense-studio")
