@@ -121,3 +121,17 @@ class ProfilesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SimpleReportTest(unittest.TestCase):
+    def test_bluetooth_simple_report(self):
+        report = bytes([0x01, 10, 250, 128, 128, 0x24, 0x01, 0x01, 40, 200])
+        data = inputs.parse(report)
+        self.assertEqual(data["sticks"], {"lx": 10, "ly": 250, "rx": 128, "ry": 128})
+        self.assertEqual(data["triggers"], {"l2": 40, "r2": 200})
+        self.assertTrue(data["buttons"]["cross"])
+        self.assertTrue(data["buttons"]["l1"])
+        self.assertTrue(data["buttons"]["ps"])
+        self.assertTrue(data["buttons"]["down"])
+        self.assertFalse(any(t["active"] for t in data["touch"]))
+        self.assertEqual(data["battery"], (None, None))

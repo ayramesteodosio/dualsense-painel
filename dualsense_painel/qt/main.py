@@ -2,7 +2,7 @@ import os
 import signal
 import sys
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QLibraryInfo, QLocale, QTimer, QTranslator
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
@@ -116,6 +116,11 @@ def main(argv=None):
     QApplication.setApplicationName("Painel do DualSense")
     QApplication.setDesktopFileName(APP_ID)
     app = QApplication([a for a in argv if a not in ("--carregar", "--normal")])
+    if plataforma.WINDOWS:
+        app.setStyle("Fusion")
+    traducao = QTranslator(app)
+    if traducao.load(QLocale("pt_BR"), "qtbase", "_", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+        app.installTranslator(traducao)
     app.setQuitOnLastWindowClosed(False)
     lock = acquire_lock()
     if lock is None:

@@ -13,6 +13,7 @@ BUS_BLUETOOTH = 2
 USB_OUTPUT_SIZE = 48
 CALIBRATION_REPORT = 0x05
 CALIBRATION_SIZE = 41
+BT_INPUT_ID = 0x31
 
 
 def _set_darwin_exclusive(on):
@@ -61,11 +62,10 @@ class HidapiDevice:
         if plataforma.MACOS and self._exclusive:
             _set_darwin_exclusive(False)
         self.dev = dev
-        if self.ref.bluetooth:
-            try:
-                dev.get_feature_report(CALIBRATION_REPORT, CALIBRATION_SIZE)
-            except (OSError, ValueError):
-                pass
+        try:
+            dev.get_feature_report(CALIBRATION_REPORT, CALIBRATION_SIZE)
+        except (OSError, ValueError):
+            pass
 
     def start(self, on_report):
         self._on_report = on_report
@@ -84,6 +84,9 @@ class HidapiDevice:
                         self.failed = True
                     return
                 if data:
+                    if data[0] == BT_INPUT_ID and not self.ref.bluetooth:
+                        self.ref.bluetooth = True
+                        self.ref.usb_id = None
                     self._on_report(bytes(data))
         self._thread = threading.Thread(target=loop, name="dualsense-hidapi", daemon=True)
         self._thread.start()

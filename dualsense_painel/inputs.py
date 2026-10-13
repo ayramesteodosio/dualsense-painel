@@ -32,8 +32,22 @@ def _touch(data, off):
     return {"active": not contact & 0x80, "id": contact & 0x7F, "x": x, "y": y}
 
 
+def simple_payload(report):
+    if not report or report[0] != USB_INPUT_ID or not 10 <= len(report) < 64:
+        return None
+    data = bytearray(63)
+    data[0:4] = report[1:5]
+    data[4], data[5] = report[8], report[9]
+    data[7], data[8], data[9] = report[5], report[6], report[7] & 0x03
+    data[32] = data[36] = 0x80
+    return bytes(data)
+
+
 def parse(report):
     data = payload_of(report)
+    simple = data is None
+    if simple:
+        data = simple_payload(report)
     if data is None:
         return None
     b0, b1, b2 = data[7], data[8], data[9]
@@ -57,7 +71,7 @@ def parse(report):
         "gyro": [round(v / GYRO_PER_DEG_S, 2) for v in gyro],
         "accel": [round(v / ACCEL_PER_G, 3) for v in accel],
         "timestamp": struct.unpack_from("<I", data, 27)[0],
-        "battery": battery_from_status(status),
+        "battery": (None, None) if simple else battery_from_status(status),
         "headphones": bool(data[53] & 0x01),
         "mic_plugged": bool(data[53] & 0x02),
     }
