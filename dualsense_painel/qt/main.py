@@ -34,6 +34,7 @@ def send_command(command):
 
 class _Aviso(QObject):
     pronto = Signal(str, str)
+    nada = Signal(bool)
 
 
 class AppCtl:
@@ -70,6 +71,7 @@ class AppCtl:
         self._url_versao = None
         self.aviso = _Aviso()
         self.aviso.pronto.connect(self._nova_versao)
+        self.aviso.nada.connect(lambda achou: self.window.toast(atualizacao.texto_sem_novidade(achou, VERSAO)))
         if self.tray:
             self.tray.messageClicked.connect(self._abrir_versao)
         QTimer.singleShot(5000, self._checar_versao)
@@ -81,12 +83,13 @@ class AppCtl:
     def _checar_versao(self):
         atualizacao.verificar("dualsense-painel", VERSAO, self.aviso.pronto.emit)
 
+    def procurar_versao(self):
+        atualizacao.verificar("dualsense-painel", VERSAO, self.aviso.pronto.emit, self.aviso.nada.emit)
+
     def _nova_versao(self, tag, url):
-        if url == self._url_versao:
-            return
         self._url_versao = url
         self.notify(f"Versão {tag} disponível", "Clique aqui para abrir a página de download.")
-        if self.tray:
+        if self.tray and not getattr(self, "acao_versao", None):
             acao = QAction(f"Baixar a versão {tag}")
             acao.triggered.connect(self._abrir_versao)
             self.menu.insertAction(self.menu.actions()[0], acao)

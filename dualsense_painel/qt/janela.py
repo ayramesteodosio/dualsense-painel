@@ -10,6 +10,7 @@ from .. import audio, charge_light, config, profiles
 from ..protocol import MODES_BY_KEY, TRIGGER_MODES
 from ..session import Session
 from ..tester import BUTTONS, DRIFT_TEXT, Tester
+from ..versao import VERSAO
 from .laco import QtLoop
 from .widgets import (BatteryChart, Chip, ColorButton, Dot, StickView, Swatch, TouchView, ValueSlider, row,
                       section)
@@ -212,6 +213,9 @@ class Janela(QMainWindow):
         self.off_row = row("Desligar controle", off, "Desconecta do Bluetooth e desliga")
         self.off_row.setVisible(False)
         lay.addWidget(self.off_row)
+        procurar = QPushButton("Procurar atualizações")
+        procurar.clicked.connect(self.app_ctl.procurar_versao)
+        lay.addWidget(row("Versão do app", procurar, VERSAO if VERSAO != "0.0.0" else "Rodando pelo código"))
         v.addWidget(box)
         v.addStretch(1)
         return w

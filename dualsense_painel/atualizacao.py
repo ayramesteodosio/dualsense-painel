@@ -33,15 +33,25 @@ def mais_nova(repo, atual, abrir=urllib.request.urlopen):
     return None
 
 
-def verificar(repo, atual, quando_houver):
-    if numeros(atual) == (0, 0, 0):
+def verificar(repo, atual, quando_houver, quando_nao=None):
+    if quando_nao is None and numeros(atual) == (0, 0, 0):
         return
 
     def trabalho():
         try:
             achou = mais_nova(repo, atual)
         except Exception:
+            if quando_nao:
+                quando_nao(False)
             return
         if achou:
             quando_houver(*achou)
+        elif quando_nao:
+            quando_nao(True)
     threading.Thread(target=trabalho, daemon=True).start()
+
+
+def texto_sem_novidade(encontrou, atual):
+    if not encontrou:
+        return "Não consegui procurar atualizações agora. Confira a conexão com a internet."
+    return f"Você já está na versão mais nova ({atual})."

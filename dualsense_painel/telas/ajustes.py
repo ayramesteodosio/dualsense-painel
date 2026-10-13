@@ -1,5 +1,6 @@
 from gi.repository import Adw, Gtk
 
+from ..versao import VERSAO
 from .historico import BatteryChart, duration
 
 LOW_BATTERY = (0, 10, 15, 20, 25, 30)
@@ -64,9 +65,15 @@ class AjustesGroup:
         self.off_row.set_visible(False)
         self.widget.add(self.off_row)
 
+        versao = Adw.ActionRow(title="Versão do app", subtitle=VERSAO if VERSAO != "0.0.0" else "Rodando pelo código")
+        procurar = Gtk.Button(label="Procurar atualizações", valign=Gtk.Align.CENTER)
+        procurar.connect("clicked", lambda *_: self.win.get_application().procurar_versao())
+        versao.add_suffix(procurar)
+        self.widget.add(versao)
+
     def _set(self, widget, _pspec, key, getter):
         self.win.cfg[key] = getter(widget)
         self.win.changed()
 
     def refresh(self):
-        self.off_row.set_visible(self.win.session.connection == "bluetooth")
+        self.off_row.set_visible(self.win.session.connection == "bluetooth" and self.win.session.pode_desligar_bluetooth)

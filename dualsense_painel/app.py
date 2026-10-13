@@ -625,8 +625,18 @@ class App(Adw.Application):
                               lambda tag, url: GLib.idle_add(self._nova_versao, tag, url))
         return repetir
 
-    def _nova_versao(self, tag, url):
-        if url != self._url_versao and self.window:
+    def procurar_versao(self):
+        atualizacao.verificar("dualsense-painel", VERSAO,
+                              lambda tag, url: GLib.idle_add(self._nova_versao, tag, url, True),
+                              lambda achou: GLib.idle_add(self._sem_versao, achou))
+
+    def _sem_versao(self, achou):
+        if self.window:
+            self.window.toast(atualizacao.texto_sem_novidade(achou, VERSAO))
+        return False
+
+    def _nova_versao(self, tag, url, forcar=False):
+        if (forcar or url != self._url_versao) and self.window:
             self._url_versao = url
             toast = Adw.Toast(title=f"Versão {tag} disponível", timeout=0)
             toast.set_button_label("Baixar")
