@@ -15,9 +15,11 @@ FLAG1_MIC_LED = 0x01
 FLAG1_LIGHTBAR = 0x04
 FLAG1_PLAYER_LEDS = 0x10
 FLAG2_LED_BRIGHTNESS = 0x01
+FLAG2_LIGHTBAR_SETUP = 0x02
 FLAG2_COMPATIBLE_VIBRATION2 = 0x04
 
 PLAYER_LEDS_INSTANT = 0x20
+LIGHTBAR_SETUP_LIGHT_OUT = 0x02
 
 OFF_FLAG0 = 0
 OFF_FLAG1 = 1
@@ -27,6 +29,7 @@ OFF_MIC_LED = 8
 OFF_RIGHT_TRIGGER = 10
 OFF_LEFT_TRIGGER = 21
 OFF_FLAG2 = 38
+OFF_LIGHTBAR_SETUP = 41
 OFF_LED_BRIGHTNESS = 42
 OFF_PLAYER_LEDS = 43
 OFF_LIGHTBAR = 44
@@ -187,11 +190,14 @@ def dark_state():
     return OutputState(lightbar=(0, 0, 0), player_leds=0, mic_led=0, rumble=(0, 0))
 
 
-def build_common(state):
+def build_common(state, setup=False):
     data = bytearray(COMMON_SIZE)
     data[OFF_FLAG0] = FLAG0_RIGHT_TRIGGER | FLAG0_LEFT_TRIGGER
     data[OFF_FLAG1] = FLAG1_MIC_LED | FLAG1_LIGHTBAR | FLAG1_PLAYER_LEDS
     data[OFF_FLAG2] = FLAG2_LED_BRIGHTNESS
+    if setup:
+        data[OFF_FLAG2] |= FLAG2_LIGHTBAR_SETUP
+        data[OFF_LIGHTBAR_SETUP] = LIGHTBAR_SETUP_LIGHT_OUT
     if state.rumble is not None:
         data[OFF_FLAG0] |= FLAG0_COMPATIBLE_VIBRATION | FLAG0_HAPTICS_SELECT
         data[OFF_FLAG2] |= FLAG2_COMPATIBLE_VIBRATION2
@@ -207,8 +213,8 @@ def build_common(state):
     return data
 
 
-def build_report(state, bluetooth=False, seq=0):
-    common = build_common(state)
+def build_report(state, bluetooth=False, seq=0, setup=False):
+    common = build_common(state, setup)
     if not bluetooth:
         report = bytearray(USB_REPORT_SIZE)
         report[0] = USB_REPORT_ID

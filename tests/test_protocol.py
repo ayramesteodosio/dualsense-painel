@@ -85,3 +85,13 @@ class ReportTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LightbarSetupTest(unittest.TestCase):
+    def test_setup_libera_barra_no_bluetooth(self):
+        from dualsense_painel import protocol
+        r = protocol.build_report(protocol.OutputState(), bluetooth=True, setup=True)
+        self.assertEqual(r[3 + protocol.OFF_LIGHTBAR_SETUP], protocol.LIGHTBAR_SETUP_LIGHT_OUT)
+        self.assertTrue(r[3 + protocol.OFF_FLAG2] & protocol.FLAG2_LIGHTBAR_SETUP)
+        normal = protocol.build_report(protocol.OutputState(), bluetooth=True)
+        self.assertFalse(normal[3 + protocol.OFF_FLAG2] & protocol.FLAG2_LIGHTBAR_SETUP)

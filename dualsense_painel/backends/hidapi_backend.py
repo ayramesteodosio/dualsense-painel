@@ -53,6 +53,7 @@ class HidapiDevice:
         self.failed = False
         self.hidden = False
         self._exclusive = False
+        self._liberar = 3
 
     def open(self):
         if plataforma.MACOS:
@@ -87,6 +88,7 @@ class HidapiDevice:
                     if data[0] == BT_INPUT_ID and not self.ref.bluetooth:
                         self.ref.bluetooth = True
                         self.ref.usb_id = None
+                        self._liberar = 3
                     self._on_report(bytes(data))
         self._thread = threading.Thread(target=loop, name="dualsense-hidapi", daemon=True)
         self._thread.start()
@@ -98,7 +100,8 @@ class HidapiDevice:
         self._thread = None
 
     def send(self, state):
-        report = build_report(state, self.ref.bluetooth, self._seq)
+        report = build_report(state, self.ref.bluetooth, self._seq, setup=self._liberar > 0)
+        self._liberar = max(0, self._liberar - 1)
         self._seq = (self._seq + 1) & 0x0F
         if not self.ref.bluetooth:
             report = report[:USB_OUTPUT_SIZE]
