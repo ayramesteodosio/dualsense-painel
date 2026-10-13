@@ -98,10 +98,11 @@ class ColorButton(QPushButton):
     def set_rgb(self, rgb):
         self.rgb = list(rgb)
         r, g, b = self.rgb
-        self.setStyleSheet(f"background: rgb({r},{g},{b}); border: 1px solid rgba(128,128,128,.6); border-radius: 6px;")
+        self.setStyleSheet(f"ColorButton {{ background: rgb({r},{g},{b}); border: 1px solid rgba(128,128,128,.6); "
+                           "border-radius: 6px; }")
 
     def _pick(self):
-        color = QColorDialog.getColor(QColor(*self.rgb), self, self.title)
+        color = QColorDialog.getColor(QColor(*self.rgb), self.window(), self.title)
         if color.isValid():
             self.set_rgb([color.red(), color.green(), color.blue()])
             self.color_changed.emit(self.rgb)
@@ -114,7 +115,8 @@ class Swatch(QPushButton):
         self.setToolTip(tip)
         self.setFixedSize(26, 26)
         r, g, b = rgb
-        self.setStyleSheet(f"background: rgb({r},{g},{b}); border-radius: 13px; border: 1px solid rgba(128,128,128,.5);")
+        self.setStyleSheet(f"Swatch {{ background: rgb({r},{g},{b}); border-radius: 13px; "
+                           "border: 1px solid rgba(128,128,128,.5); }")
 
 
 class Chip(QLabel):
@@ -131,7 +133,7 @@ class Chip(QLabel):
             css = "background: rgba(46,194,126,.30);"
         else:
             css = "background: rgba(128,128,128,.14);"
-        self.setStyleSheet(css + " border-radius: 14px; padding: 4px 8px;")
+        self.setStyleSheet("Chip { " + css + " border-radius: 14px; padding: 4px 8px; }")
 
 
 class BatteryChart(QWidget):
