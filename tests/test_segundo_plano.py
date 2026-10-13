@@ -75,7 +75,7 @@ class AutostartOutrosTest(unittest.TestCase):
             self.assertFalse(sp.ativo("dualsense-painel"))
 
     def test_macos_launchagent(self):
-        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"HOME": d}), \
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"HOME": d, "USERPROFILE": d}), \
                 mock.patch.object(plataforma, "MACOS", True), mock.patch.object(plataforma, "LINUX", False), \
                 mock.patch.object(plataforma, "WINDOWS", False), mock.patch.object(sys, "frozen", True, create=True), \
                 mock.patch.object(sys, "executable", "/Applications/DualSense Studio.app/Contents/MacOS/DualSense Studio"):
