@@ -94,7 +94,7 @@ class Janela(QMainWindow):
         self.session.start()
 
     def toast(self, text):
-        self.statusBar().showMessage(text, 2500)
+        self.statusBar().showMessage(text, 2500 if len(text) < 60 else 8000)
 
     def aviso_versao(self, tag, abrir):
         if getattr(self, "botao_versao", None):

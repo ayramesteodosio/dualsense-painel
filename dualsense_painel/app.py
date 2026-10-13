@@ -341,7 +341,7 @@ class Window(Adw.ApplicationWindow):
         previous = getattr(self, "_toast", None)
         if previous:
             previous.dismiss()
-        self._toast = Adw.Toast(title=text, timeout=2)
+        self._toast = Adw.Toast(title=text, timeout=2 if len(text) < 60 else 7)
         self.toasts.add_toast(self._toast)
 
 

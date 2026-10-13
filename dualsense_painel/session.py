@@ -99,6 +99,7 @@ class Session:
         self._raw_count = 0
         self._raw_seen = 0
         self._registrou = False
+        self._aviso_cheio = -100.0
         self._hz_mark = (time.monotonic(), 0)
         self._combo_since = None
         self._combo_fired = False
@@ -176,6 +177,7 @@ class Session:
     def settings_changed(self):
         self._update_pulse()
         self.push()
+        self._avisar_cheio()
         if self._save_source:
             self.loop.source_remove(self._save_source)
         self._save_source = self.loop.timeout_add(600, self._save)
@@ -214,9 +216,23 @@ class Session:
         self._mode_changed()
         self._refresh_status()
         if announce and on and self._attached:
-            self.listener.toast("Modo carregar ligado")
+            if not self._avisar_cheio(forcar=True):
+                self.listener.toast("Modo carregar ligado")
         elif announce and not on:
             self.listener.toast("De volta ao modo normal")
+
+    def _avisar_cheio(self, forcar=False):
+        if not (self.charging_mode and self._attached and self.battery_status == "Full"):
+            return False
+        if not self.cfg.get("charge_glow", True) or self.cfg.get("charge_full", "off") != "off":
+            return False
+        agora = time.monotonic()
+        if not forcar and agora - self._aviso_cheio < 20:
+            return False
+        self._aviso_cheio = agora
+        self.listener.toast("O controle já está cheio, por isso a luz apagou. "
+                            "Para deixar acesa, mude \"Quando encher\" na luz do modo carregar.")
+        return True
 
     def _hide(self):
         dev = self.device
