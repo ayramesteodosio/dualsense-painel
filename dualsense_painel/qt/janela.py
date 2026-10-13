@@ -96,6 +96,15 @@ class Janela(QMainWindow):
     def toast(self, text):
         self.statusBar().showMessage(text, 2500)
 
+    def aviso_versao(self, tag, abrir):
+        if getattr(self, "botao_versao", None):
+            self.botao_versao.setText(f"Baixar a versão {tag}")
+            return
+        self.botao_versao = QPushButton(f"Baixar a versão {tag}")
+        self.botao_versao.setFlat(True)
+        self.botao_versao.clicked.connect(abrir)
+        self.statusBar().addPermanentWidget(self.botao_versao)
+
     def _current(self):
         return self.tabs.tabText(self.tabs.currentIndex()) if self.isVisible() else None
 

@@ -8,9 +8,10 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from . import charge_light, config
+from . import atualizacao, charge_light, config
 from .protocol import MODES_BY_KEY, TRIGGER_MODES
 from .session import Session, acquire_lock
+from .versao import VERSAO
 from .telas.ajustes import AjustesGroup, HistoricoGroup
 from .telas.info import InfoPage
 from .telas.perfis import PerfisGroup
@@ -560,6 +561,8 @@ class App(Adw.Application):
         self._held = False
         self._lock = None
         self.start_charging = False
+        self._url_versao = None
+        self._checando = False
         for name, on in (("carregar", True), ("normal", False)):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", self._on_mode_action, on)
@@ -607,11 +610,29 @@ class App(Adw.Application):
                 return
         if not self.window:
             self.window = Window(self)
+        if not self._checando:
+            self._checando = True
+            GLib.timeout_add_seconds(5, self._checar_versao)
+            GLib.timeout_add_seconds(24 * 3600, self._checar_versao, True)
         if self._held:
             self.release()
             self._held = False
         self.window.set_visible(True)
         self.window.present()
+
+    def _checar_versao(self, repetir=False):
+        atualizacao.verificar("dualsense-painel", VERSAO,
+                              lambda tag, url: GLib.idle_add(self._nova_versao, tag, url))
+        return repetir
+
+    def _nova_versao(self, tag, url):
+        if url != self._url_versao and self.window:
+            self._url_versao = url
+            toast = Adw.Toast(title=f"Versão {tag} disponível", timeout=0)
+            toast.set_button_label("Baixar")
+            toast.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
+            self.window.toasts.add_toast(toast)
+        return False
 
     def hold_in_background(self):
         if not self._held:

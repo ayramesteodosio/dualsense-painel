@@ -2,12 +2,13 @@ import os
 import signal
 import sys
 
-from PySide6.QtCore import QLibraryInfo, QLocale, QTimer, QTranslator
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import QLibraryInfo, QLocale, QObject, QTimer, QTranslator, QUrl, Signal
+from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
-from .. import plataforma
+from .. import atualizacao, plataforma
+from ..versao import VERSAO
 from ..session import acquire_lock
 
 SERVER = "dualsense-painel-qt"
@@ -29,6 +30,10 @@ def send_command(command):
     sock.waitForBytesWritten(800)
     sock.disconnectFromServer()
     return True
+
+
+class _Aviso(QObject):
+    pronto = Signal(str, str)
 
 
 class AppCtl:
@@ -62,6 +67,35 @@ class AppCtl:
         self.window.show()
         if start_mode is not None:
             QTimer.singleShot(1500, lambda: self.window.set_charging(start_mode))
+        self._url_versao = None
+        self.aviso = _Aviso()
+        self.aviso.pronto.connect(self._nova_versao)
+        if self.tray:
+            self.tray.messageClicked.connect(self._abrir_versao)
+        QTimer.singleShot(5000, self._checar_versao)
+        self.timer_versao = QTimer()
+        self.timer_versao.setInterval(24 * 3600 * 1000)
+        self.timer_versao.timeout.connect(self._checar_versao)
+        self.timer_versao.start()
+
+    def _checar_versao(self):
+        atualizacao.verificar("dualsense-painel", VERSAO, self.aviso.pronto.emit)
+
+    def _nova_versao(self, tag, url):
+        if url == self._url_versao:
+            return
+        self._url_versao = url
+        self.notify(f"Versão {tag} disponível", "Clique aqui para abrir a página de download.")
+        if self.tray:
+            acao = QAction(f"Baixar a versão {tag}")
+            acao.triggered.connect(self._abrir_versao)
+            self.menu.insertAction(self.menu.actions()[0], acao)
+            self.acao_versao = acao
+        self.window.aviso_versao(tag, self._abrir_versao)
+
+    def _abrir_versao(self):
+        if self._url_versao:
+            QDesktopServices.openUrl(QUrl(self._url_versao))
 
     def tray_available(self):
         return self.tray is not None

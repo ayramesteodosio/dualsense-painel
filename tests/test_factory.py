@@ -32,3 +32,23 @@ class FactoryTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AtualizacaoTest(unittest.TestCase):
+    def resposta(self, tag):
+        import io
+        import json
+
+        class Resposta(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+        return lambda pedido, timeout, context: Resposta(json.dumps({"tag_name": tag, "html_url": "u"}).encode())
+
+    def test_compara_versoes(self):
+        from dualsense_painel import atualizacao
+        self.assertEqual(atualizacao.mais_nova("r", "0.1.2", self.resposta("v0.1.10")), ("0.1.10", "u"))
+        self.assertIsNone(atualizacao.mais_nova("r", "0.1.2", self.resposta("v0.1.2")))
+        self.assertIsNone(atualizacao.mais_nova("r", "0.2.0", self.resposta("v0.1.9")))
