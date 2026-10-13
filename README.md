@@ -30,16 +30,25 @@ outra interface.
 
 ## Baixar
 
-| Sistema | Como |
-|---|---|
-| Linux | Clone o repo e rode `./instalar.sh` (veja abaixo) |
-| Windows | `.zip` em [Releases](https://github.com/ayramesteodosio/dualsense-painel/releases) |
-| macOS (Apple Silicon e Intel) | `.zip` com o `.app` em [Releases](https://github.com/ayramesteodosio/dualsense-painel/releases) |
+Pegue o arquivo do seu sistema na [última versão](https://github.com/ayramesteodosio/dualsense-painel/releases/latest):
+
+| Sistema | Arquivo | Como instalar |
+|---|---|---|
+| Windows 10 e 11 | `Painel-DualSense-windows.exe` | Abra e siga o instalador |
+| macOS com chip Apple | `Painel-DualSense-macos-arm64.dmg` | Abra e arraste o app para Aplicativos |
+| macOS com Intel | `Painel-DualSense-macos-intel.dmg` | Abra e arraste o app para Aplicativos |
+| Ubuntu, Debian, Mint e derivados | `dualsense-painel_<versão>_all.deb` | Dois cliques, ou `sudo apt install ./dualsense-painel_*.deb` |
+
+O app não tem assinatura digital, então o sistema avisa na primeira vez:
+
+- Windows: em "O Windows protegeu o computador", clique em **Mais informações** e **Executar assim mesmo**.
+- macOS: se o Mac não deixar abrir, vá em **Ajustes do Sistema > Privacidade e Segurança** e clique em
+  **Abrir Mesmo Assim**.
 
 Windows e macOS ainda não foram testados em máquinas reais, só com um controle simulado e com o pacote
 rodando no Linux. Se algo não funcionar, abra uma issue.
 
-## Instalar no Linux
+## Rodar pelo código no Linux
 
 ```sh
 git clone https://github.com/ayramesteodosio/dualsense-painel.git
