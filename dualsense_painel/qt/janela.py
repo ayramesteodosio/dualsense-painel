@@ -2,7 +2,7 @@ import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QGuiApplication
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                                QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QStackedWidget,
                                QTabWidget, QVBoxLayout, QWidget)
 
@@ -87,7 +87,13 @@ class Janela(QMainWindow):
         self.outer = QStackedWidget()
         self.outer.addWidget(empty)
         self.outer.addWidget(self.tabs)
-        self.setCentralWidget(self.outer)
+        corpo = QWidget()
+        coluna = QVBoxLayout(corpo)
+        coluna.setContentsMargins(0, 0, 0, 0)
+        coluna.setSpacing(0)
+        coluna.addWidget(self._build_faixa())
+        coluna.addWidget(self.outer, 1)
+        self.setCentralWidget(corpo)
 
         self.mode_changed()
         self.historico_refresh()
@@ -97,14 +103,61 @@ class Janela(QMainWindow):
     def toast(self, text):
         self.statusBar().showMessage(text, 2500 if len(text) < 60 else 8000)
 
-    def aviso_versao(self, tag, abrir):
-        if getattr(self, "botao_versao", None):
-            self.botao_versao.setText(f"Baixar a versão {tag}")
-            return
-        self.botao_versao = QPushButton(f"Baixar a versão {tag}")
-        self.botao_versao.setFlat(True)
-        self.botao_versao.clicked.connect(abrir)
-        self.statusBar().addPermanentWidget(self.botao_versao)
+    def _build_faixa(self):
+        self.faixa = QFrame()
+        self.faixa.setObjectName("faixa")
+        self.faixa.setStyleSheet("QFrame#faixa { background: palette(highlight); } "
+                                 "QFrame#faixa QLabel { color: palette(highlighted-text); font-weight: 600; }")
+        h = QHBoxLayout(self.faixa)
+        h.setContentsMargins(14, 8, 10, 8)
+        self.faixa_texto = QLabel()
+        self.faixa_progresso = QProgressBar()
+        self.faixa_progresso.setRange(0, 100)
+        self.faixa_progresso.setMaximumWidth(180)
+        self.faixa_progresso.setVisible(False)
+        self.faixa_acao = QPushButton()
+        self.faixa_depois = QPushButton("Depois")
+        self.faixa_depois.clicked.connect(lambda: self.faixa.setVisible(False))
+        h.addWidget(self.faixa_texto, 1)
+        h.addWidget(self.faixa_progresso)
+        h.addWidget(self.faixa_acao)
+        h.addWidget(self.faixa_depois)
+        self.faixa.setVisible(False)
+        return self.faixa
+
+    def _faixa_botao(self, texto, acao):
+        try:
+            self.faixa_acao.clicked.disconnect()
+        except (RuntimeError, TypeError):
+            pass
+        self.faixa_acao.setText(texto)
+        self.faixa_acao.setEnabled(True)
+        self.faixa_acao.clicked.connect(acao)
+
+    def aviso_versao(self, tag, pode_instalar, atualizar, abrir):
+        self.faixa_texto.setText(f"Versão {tag} disponível.")
+        self.faixa_progresso.setVisible(False)
+        self.faixa_depois.setVisible(True)
+        self._faixa_botao("Atualizar agora" if pode_instalar else "Baixar", atualizar if pode_instalar else abrir)
+        self.faixa.setVisible(True)
+
+    def progresso_versao(self, tag, fracao):
+        self.faixa_texto.setText(f"Baixando a versão {tag}...")
+        self.faixa_progresso.setVisible(True)
+        self.faixa_progresso.setValue(round(fracao * 100))
+        self.faixa_acao.setEnabled(False)
+        self.faixa_depois.setVisible(False)
+
+    def instalando_versao(self, tag):
+        self.faixa_texto.setText(f"Instalando a versão {tag}. O painel fecha e abre de novo sozinho.")
+        self.faixa_progresso.setVisible(False)
+        self.faixa_acao.setVisible(False)
+
+    def falha_versao(self, erro, abrir):
+        self.faixa_texto.setText(f"Não consegui baixar a atualização ({erro}).")
+        self.faixa_progresso.setVisible(False)
+        self.faixa_depois.setVisible(True)
+        self._faixa_botao("Abrir a página", abrir)
 
     def _current(self):
         return self.tabs.tabText(self.tabs.currentIndex()) if self.isVisible() else None

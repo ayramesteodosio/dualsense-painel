@@ -639,10 +639,42 @@ class App(Adw.Application):
         if (forcar or url != self._url_versao) and self.window:
             self._url_versao = url
             toast = Adw.Toast(title=f"Versão {tag} disponível", timeout=0)
-            toast.set_button_label("Baixar")
-            toast.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
+            if atualizacao.pode_instalar("dualsense-painel"):
+                toast.set_button_label("Atualizar agora")
+                toast.connect("button-clicked", lambda *_: self._atualizar(tag, url))
+            else:
+                toast.set_button_label("Baixar")
+                toast.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
             self.window.toasts.add_toast(toast)
         return False
+
+    def _atualizar(self, tag, url):
+        toast = Adw.Toast(title=f"Baixando a versão {tag}...", timeout=0)
+        self.window.toasts.add_toast(toast)
+
+        def progresso(fracao):
+            GLib.idle_add(lambda: toast.set_title(f"Baixando a versão {tag}... {round(fracao * 100)}%") and False)
+
+        def pronto(caminho):
+            def instalar():
+                toast.set_title(f"Instalando a versão {tag}. O painel fecha e abre de novo sozinho.")
+                if atualizacao.instalar("dualsense-painel", caminho):
+                    GLib.timeout_add(800, lambda: self.quit() and False)
+                else:
+                    toast.set_title("Não deu para instalar sozinho.")
+                return False
+            GLib.idle_add(instalar)
+
+        def falhou(erro):
+            def mostrar():
+                toast.dismiss()
+                novo = Adw.Toast(title=f"Não consegui baixar a atualização ({erro})", timeout=0)
+                novo.set_button_label("Abrir a página")
+                novo.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
+                self.window.toasts.add_toast(novo)
+                return False
+            GLib.idle_add(mostrar)
+        atualizacao.baixar("dualsense-painel", tag, progresso, pronto, falhou)
 
     def hold_in_background(self):
         if not self._held:

@@ -35,6 +35,9 @@ def send_command(command):
 class _Aviso(QObject):
     pronto = Signal(str, str)
     nada = Signal(bool)
+    progresso = Signal(float)
+    baixado = Signal(str)
+    falhou = Signal(str)
 
 
 class AppCtl:
@@ -72,8 +75,12 @@ class AppCtl:
         self.aviso = _Aviso()
         self.aviso.pronto.connect(self._nova_versao)
         self.aviso.nada.connect(lambda achou: self.window.toast(atualizacao.texto_sem_novidade(achou, VERSAO)))
+        self.aviso.progresso.connect(lambda f: self.window.progresso_versao(self._tag_versao, f))
+        self.aviso.baixado.connect(self._baixado)
+        self.aviso.falhou.connect(lambda e: self.window.falha_versao(e, self._abrir_versao))
+        self._tag_versao = None
         if self.tray:
-            self.tray.messageClicked.connect(self._abrir_versao)
+            self.tray.messageClicked.connect(self.show)
         QTimer.singleShot(5000, self._checar_versao)
         self.timer_versao = QTimer()
         self.timer_versao.setInterval(24 * 3600 * 1000)
@@ -88,13 +95,28 @@ class AppCtl:
 
     def _nova_versao(self, tag, url):
         self._url_versao = url
-        self.notify(f"Versão {tag} disponível", "Clique aqui para abrir a página de download.")
+        self._tag_versao = tag
+        if not self.window.isVisible():
+            self.notify(f"Versão {tag} disponível", "Abra o painel para atualizar.")
         if self.tray and not getattr(self, "acao_versao", None):
-            acao = QAction(f"Baixar a versão {tag}")
-            acao.triggered.connect(self._abrir_versao)
+            acao = QAction(f"Atualizar para a versão {tag}")
+            acao.triggered.connect(self.show)
             self.menu.insertAction(self.menu.actions()[0], acao)
             self.acao_versao = acao
-        self.window.aviso_versao(tag, self._abrir_versao)
+        self.window.aviso_versao(tag, atualizacao.pode_instalar("dualsense-painel"), self._atualizar,
+                                 self._abrir_versao)
+
+    def _atualizar(self):
+        self.window.progresso_versao(self._tag_versao, 0)
+        atualizacao.baixar("dualsense-painel", self._tag_versao, self.aviso.progresso.emit, self.aviso.baixado.emit,
+                           self.aviso.falhou.emit)
+
+    def _baixado(self, caminho):
+        self.window.instalando_versao(self._tag_versao)
+        if atualizacao.instalar("dualsense-painel", caminho):
+            QTimer.singleShot(600, self.quit)
+        else:
+            self.window.falha_versao("não deu para instalar sozinho", self._abrir_versao)
 
     def _abrir_versao(self):
         if self._url_versao:
@@ -140,6 +162,9 @@ class AppCtl:
         sock.readyRead.connect(read)
 
     def quit(self):
+        if getattr(self, "_saindo", False):
+            return
+        self._saindo = True
         try:
             self.window.stop_mic()
             self.window.session.cleanup()

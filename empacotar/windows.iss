@@ -42,6 +42,7 @@ Name: "{autodesktop}\Painel do DualSense"; Filename: "{app}\Painel do DualSense.
 [Run]
 Filename: "{tmp}\HidHide.exe"; StatusMsg: "Instalando o HidHide..."; Flags: shellexec waituntilterminated skipifdoesntexist; Tasks: hidhide
 Filename: "{app}\Painel do DualSense.exe"; Description: "{cm:LaunchProgram,Painel do DualSense}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Painel do DualSense.exe"; Flags: nowait; Check: WizardSilent
 
 [Code]
 var

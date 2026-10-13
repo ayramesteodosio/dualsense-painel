@@ -1,9 +1,20 @@
 import json
+import os
+import platform
+import shlex
 import ssl
+import subprocess
+import sys
+import tempfile
 import threading
 import urllib.request
 
+from . import plataforma
+
 DONO = "ayramesteodosio"
+BASES = {"dualsense-painel": "Painel-DualSense", "dualsense-studio": "DualSense-Studio"}
+APPS = {"dualsense-painel": "Painel do DualSense", "dualsense-studio": "DualSense Studio"}
+_RELEASES = {}
 
 
 def numeros(versao):
@@ -28,6 +39,7 @@ def mais_nova(repo, atual, abrir=urllib.request.urlopen):
     with abrir(pedido, timeout=10, context=_contexto()) as resposta:
         dados = json.load(resposta)
     tag = str(dados.get("tag_name", "")).lstrip("v")
+    _RELEASES[repo] = dados
     if tag and numeros(tag) > numeros(atual):
         return tag, dados.get("html_url") or f"https://github.com/{DONO}/{repo}/releases/latest"
     return None
@@ -55,3 +67,90 @@ def texto_sem_novidade(encontrou, atual):
     if not encontrou:
         return "Não consegui procurar atualizações agora. Confira a conexão com a internet."
     return f"Você já está na versão mais nova ({atual})."
+
+
+def nome_do_arquivo(repo, tag):
+    base = BASES[repo]
+    if plataforma.WINDOWS:
+        return f"{base}-windows.exe"
+    if plataforma.MACOS:
+        return f"{base}-macos-{'arm64' if platform.machine() == 'arm64' else 'intel'}.dmg"
+    return f"{repo}_{tag}_all.deb"
+
+
+def pode_instalar(repo):
+    if plataforma.WINDOWS or plataforma.MACOS:
+        return bool(getattr(sys, "frozen", False))
+    pasta = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return pasta == f"/usr/share/{repo}" and bool(_procurar("pkexec"))
+
+
+def _procurar(programa):
+    for pasta in os.environ.get("PATH", "/usr/bin").split(os.pathsep):
+        caminho = os.path.join(pasta, programa)
+        if os.access(caminho, os.X_OK):
+            return caminho
+    return None
+
+
+def _endereco(repo, tag):
+    nome = nome_do_arquivo(repo, tag)
+    for arquivo in (_RELEASES.get(repo) or {}).get("assets", []):
+        if arquivo.get("name") == nome:
+            return arquivo.get("browser_download_url"), nome
+    return f"https://github.com/{DONO}/{repo}/releases/download/v{tag}/{nome}", nome
+
+
+def baixar(repo, tag, progresso, pronto, falhou):
+    def trabalho():
+        try:
+            url, nome = _endereco(repo, tag)
+            pasta = tempfile.mkdtemp(prefix="dualsense-")
+            destino = os.path.join(pasta, nome)
+            pedido = urllib.request.Request(url, headers={"User-Agent": repo})
+            with urllib.request.urlopen(pedido, timeout=30, context=_contexto()) as resposta, open(destino, "wb") as f:
+                total = int(resposta.headers.get("Content-Length") or 0)
+                feito = 0
+                while True:
+                    bloco = resposta.read(256 * 1024)
+                    if not bloco:
+                        break
+                    f.write(bloco)
+                    feito += len(bloco)
+                    if total:
+                        progresso(min(1.0, feito / total))
+            pronto(destino)
+        except Exception as e:
+            falhou(str(e))
+    threading.Thread(target=trabalho, daemon=True).start()
+
+
+def _pacote_mac():
+    caminho = os.path.abspath(sys.executable)
+    while caminho != "/" and not caminho.endswith(".app"):
+        caminho = os.path.dirname(caminho)
+    return caminho if caminho.endswith(".app") else None
+
+
+def instalar(repo, caminho):
+    pid = os.getpid()
+    if plataforma.WINDOWS:
+        subprocess.Popen([caminho, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"],
+                         creationflags=0x00000008 | 0x00000200, close_fds=True)
+        return True
+    if plataforma.MACOS:
+        pacote = _pacote_mac()
+        if not pacote:
+            return False
+        nome = APPS[repo] + ".app"
+        script = (f"while kill -0 {pid} 2>/dev/null; do sleep 0.3; done; "
+                  f"ponto=$(mktemp -d); hdiutil attach -nobrowse -quiet -mountpoint \"$ponto\" {shlex.quote(caminho)} && "
+                  f"rm -rf {shlex.quote(pacote)} && ditto \"$ponto\"/{shlex.quote(nome)} {shlex.quote(pacote)}; "
+                  f"hdiutil detach -quiet \"$ponto\"; open {shlex.quote(pacote)}")
+        subprocess.Popen(["/bin/sh", "-c", script], start_new_session=True, close_fds=True)
+        return True
+    script = (f"while kill -0 {pid} 2>/dev/null; do sleep 0.3; done; "
+              f"pkexec env DEBIAN_FRONTEND=noninteractive apt-get install -y {shlex.quote(caminho)}; "
+              f"setsid {shlex.quote(repo)} >/dev/null 2>&1 &")
+    subprocess.Popen(["/bin/sh", "-c", script], start_new_session=True, close_fds=True)
+    return True
