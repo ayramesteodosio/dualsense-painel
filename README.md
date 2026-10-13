@@ -125,6 +125,12 @@ Os ícones saem de `dados/com.ayrames.DualSensePainel.svg` com `python3 ferramen
 
 </details>
 
+## Aviso
+
+Projeto independente, sem relação com a Sony Interactive Entertainment. DualSense, PlayStation e
+DualShock são marcas da Sony Interactive Entertainment Inc. e aparecem aqui só para indicar com qual
+controle o app funciona.
+
 ## Testes
 
 ```sh
