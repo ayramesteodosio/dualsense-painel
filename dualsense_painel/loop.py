@@ -105,8 +105,11 @@ class ThreadLoop:
             try:
                 again = fn(*args)
             except Exception:
-                import traceback
-                traceback.print_exc()
+                try:
+                    import traceback
+                    traceback.print_exc()
+                except Exception:
+                    pass
                 again = False
             if again and interval is not None:
                 with self._cond:

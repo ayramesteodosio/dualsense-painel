@@ -1,3 +1,4 @@
+import sys
 import threading
 import time
 
@@ -10,6 +11,13 @@ ACTIVITY_STICK = 24
 BATTERY_COLORS = ((60, (0, 255, 40)), (25, (255, 200, 0)), (0, (255, 0, 0)))
 RETURN_GRACE = 4
 
+
+
+def registrar(texto):
+    try:
+        print(time.strftime("%H:%M:%S"), texto, file=sys.stderr, flush=True)
+    except Exception:
+        pass
 
 class Listener:
     def status_changed(self):
@@ -90,6 +98,7 @@ class Session:
         self._raw = None
         self._raw_count = 0
         self._raw_seen = 0
+        self._registrou = False
         self._hz_mark = (time.monotonic(), 0)
         self._combo_since = None
         self._combo_fired = False
@@ -160,7 +169,8 @@ class Session:
             state = self.charge_state() if self.charging_mode else self.normal_state()
         try:
             self.device.send(state)
-        except OSError:
+        except OSError as e:
+            registrar(f"falha ao enviar: {e}")
             self._drop_device()
 
     def settings_changed(self):
@@ -184,6 +194,7 @@ class Session:
         return False
 
     def set_charging(self, on, announce=True):
+        registrar(f"modo carregar: {on} bateria={self.battery_pct} {self.battery_status}")
         if not on:
             self._auto_block = self.device.ref.usb_id if self.device else None
         self.charging_mode = on
@@ -212,7 +223,9 @@ class Session:
         if dev.ref.bluetooth and not dev.can_hide_bluetooth:
             self.grab_failed = dev.grab()
             return
-        if dev.hide():
+        escondido = dev.hide()
+        registrar(f"esconder dos jogos: {escondido}")
+        if escondido:
             self.grab_failed = []
             return
         self.grab_failed = dev.grab()
@@ -337,10 +350,12 @@ class Session:
             self.listener.toast(f"Sem acesso ao controle ({getattr(e, 'strerror', None) or e})")
             return
         self.device = dev
+        registrar(f"conectado: {ref.model} bluetooth={ref.bluetooth} caminho={ref.key}")
         self._last_model = ref.model
         self._grace_until = 0.0
         self._last_activity = time.monotonic()
         self.input = None
+        self._registrou = False
         dev.start(self._on_report)
         self.info = dev.read_info()
         self._load_factory(dev)
@@ -388,6 +403,9 @@ class Session:
         if self._raw is not None and self._raw_count != self._raw_seen:
             self._raw_seen = self._raw_count
             parsed = inputs.parse(self._raw)
+            if self.input is None and not self._registrou:
+                self._registrou = True
+                registrar(f"primeiro relatório: id=0x{self._raw[0]:02x} tamanho={len(self._raw)} lido={parsed is not None}")
             if parsed:
                 self._handle_input(parsed)
                 self.listener.input(parsed)
@@ -440,6 +458,8 @@ class Session:
         status_changed = status != self.battery_status
         pct_changed = pct != self.battery_pct
         self.battery_pct, self.battery_status = pct, status
+        if status_changed:
+            registrar(f"bateria: {pct} {status}")
         if self._attached:
             self._update_pulse()
             if status_changed and self.charging_mode and not self._pulse_source:
