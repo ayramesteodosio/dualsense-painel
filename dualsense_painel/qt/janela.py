@@ -633,7 +633,7 @@ class Janela(QMainWindow):
         self.battery_bar.setValue(pct or 0)
         self.battery_status.setText(STATUS_PT.get(status, status or "bateria desconhecida"))
         self.connection_label.setText(f"{ses.model} pelo {CONNECTION.get(ses.connection, '')}")
-        self.off_row.setVisible(ses.connection == "bluetooth")
+        self.off_row.setVisible(ses.connection == "bluetooth" and ses.pode_desligar_bluetooth)
         self.app_ctl.update_tray()
         if self._current() == "Informações":
             self._refresh_info()

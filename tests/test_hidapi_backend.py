@@ -101,3 +101,14 @@ class HidHideTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SessionDuplicadoTest(unittest.TestCase):
+    def test_relatorio_repetido_nao_conta(self):
+        from dualsense_painel.session import Session
+        s = Session.__new__(Session)
+        s._raw, s._raw_count = None, 0
+        a, b = bytes([1, 2, 3]), bytes([1, 2, 4])
+        for r in (a, a, b, b, a):
+            s._on_report(r)
+        self.assertEqual(s._raw_count, 3)

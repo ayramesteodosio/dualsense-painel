@@ -19,6 +19,7 @@ class LinuxRef:
 
 class LinuxDevice:
     can_hide_bluetooth = False
+    can_disconnect_bluetooth = True
 
     def __init__(self, ref):
         self.ref = ref

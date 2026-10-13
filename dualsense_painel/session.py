@@ -269,6 +269,10 @@ class Session:
     def test_rumble(self):
         self.rumble(200, 200, 500)
 
+    @property
+    def pode_desligar_bluetooth(self):
+        return bool(self.device and getattr(self.device, "can_disconnect_bluetooth", False))
+
     def disconnect_bluetooth(self):
         mac = (self.info or {}).get("mac")
         if not self.device or not self.device.ref.bluetooth:
@@ -356,6 +360,8 @@ class Session:
             self._hz_mark = (now, self._raw_count)
 
     def _on_report(self, report):
+        if report == self._raw:
+            return
         self._raw = report
         self._raw_count += 1
 

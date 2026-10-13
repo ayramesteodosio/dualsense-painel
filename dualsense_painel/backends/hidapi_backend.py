@@ -27,6 +27,72 @@ def _set_darwin_exclusive(on):
     return True
 
 
+IOCTL_BTH_DISCONNECT_DEVICE = 0x41000C
+
+
+def _desligar_windows(mac):
+    from ctypes import wintypes
+
+    class Parametros(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD)]
+
+    bth = ctypes.WinDLL("bthprops.cpl")
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    bth.BluetoothFindFirstRadio.restype = ctypes.c_void_p
+    bth.BluetoothFindFirstRadio.argtypes = [ctypes.POINTER(Parametros), ctypes.POINTER(wintypes.HANDLE)]
+    bth.BluetoothFindNextRadio.restype = wintypes.BOOL
+    bth.BluetoothFindNextRadio.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.HANDLE)]
+    bth.BluetoothFindRadioClose.argtypes = [ctypes.c_void_p]
+    k32.DeviceIoControl.restype = wintypes.BOOL
+    k32.DeviceIoControl.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p,
+                                    wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
+    k32.CloseHandle.argtypes = [wintypes.HANDLE]
+    endereco = ctypes.c_ulonglong(int(mac.replace(":", "").replace("-", ""), 16))
+    parametros = Parametros(ctypes.sizeof(Parametros))
+    radio = wintypes.HANDLE()
+    busca = bth.BluetoothFindFirstRadio(ctypes.byref(parametros), ctypes.byref(radio))
+    if not busca:
+        return False
+    desligou = False
+    try:
+        while True:
+            lidos = wintypes.DWORD()
+            if k32.DeviceIoControl(radio, IOCTL_BTH_DISCONNECT_DEVICE, ctypes.byref(endereco), 8, None, 0,
+                                   ctypes.byref(lidos), None):
+                desligou = True
+            k32.CloseHandle(radio)
+            if desligou:
+                break
+            radio = wintypes.HANDLE()
+            if not bth.BluetoothFindNextRadio(busca, ctypes.byref(radio)):
+                break
+    finally:
+        bth.BluetoothFindRadioClose(busca)
+    return desligou
+
+
+def _desligar_macos(mac):
+    objc = ctypes.cdll.LoadLibrary("/usr/lib/libobjc.A.dylib")
+    ctypes.cdll.LoadLibrary("/System/Library/Frameworks/IOBluetooth.framework/IOBluetooth")
+    objc.objc_getClass.restype = ctypes.c_void_p
+    objc.objc_getClass.argtypes = [ctypes.c_char_p]
+    objc.sel_registerName.restype = ctypes.c_void_p
+    objc.sel_registerName.argtypes = [ctypes.c_char_p]
+    endereco_envio = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
+
+    def enviar(retorno, *argumentos):
+        return ctypes.CFUNCTYPE(retorno, ctypes.c_void_p, ctypes.c_void_p, *argumentos)(endereco_envio)
+
+    texto = enviar(ctypes.c_void_p, ctypes.c_char_p)(
+        objc.objc_getClass(b"NSString"), objc.sel_registerName(b"stringWithUTF8String:"),
+        mac.replace(":", "-").lower().encode())
+    aparelho = enviar(ctypes.c_void_p, ctypes.c_void_p)(
+        objc.objc_getClass(b"IOBluetoothDevice"), objc.sel_registerName(b"deviceWithAddressString:"), texto)
+    if not aparelho:
+        return False
+    return enviar(ctypes.c_int)(aparelho, objc.sel_registerName(b"closeConnection")) == 0
+
+
 class HidapiRef:
     def __init__(self, entry):
         self.entry = entry
@@ -41,6 +107,7 @@ class HidapiRef:
 
 class HidapiDevice:
     can_hide_bluetooth = plataforma.MACOS
+    can_disconnect_bluetooth = plataforma.WINDOWS or plataforma.MACOS
 
     def __init__(self, ref):
         self.ref = ref
@@ -182,7 +249,12 @@ class HidapiDevice:
         pass
 
     def disconnect_bluetooth(self, mac):
-        return False
+        if not (self.can_disconnect_bluetooth and self.ref.bluetooth and mac):
+            return False
+        try:
+            return _desligar_windows(mac) if plataforma.WINDOWS else _desligar_macos(mac)
+        except (OSError, ValueError, AttributeError):
+            return False
 
     def close(self):
         if self.hidden:
