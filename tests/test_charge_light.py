@@ -44,3 +44,19 @@ class ChargeLightTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MigracaoTest(unittest.TestCase):
+    def test_apagar_antigo_vira_verde(self):
+        import json
+        import os
+        import tempfile
+        from dualsense_painel import config
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "c.json")
+            with open(path, "w") as f:
+                json.dump({"charge_full": "off"}, f)
+            self.assertEqual(config.load(path)["charge_full"], "green")
+            with open(path, "w") as f:
+                json.dump({"charge_full": "off", "versao_config": 2}, f)
+            self.assertEqual(config.load(path)["charge_full"], "off")

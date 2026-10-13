@@ -20,6 +20,7 @@ DEFAULTS = {
     "profiles": {},
     **charge_light.DEFAULTS,
     "triggers": {"l2": {"mode": "off", "params": {}}, "r2": {"mode": "off", "params": {}}},
+    "versao_config": 2,
 }
 
 
@@ -35,6 +36,10 @@ def load(path=PATH):
             data[key] = saved[key]
     if data["charge_style"] not in charge_light.STYLES:
         data["charge_style"] = charge_light.DEFAULTS["charge_style"]
+    if saved.get("versao_config", 1) < 2:
+        if data["charge_full"] == "off":
+            data["charge_full"] = "green"
+        data["versao_config"] = 2
     if data["charge_full"] not in charge_light.FULL_ACTIONS:
         data["charge_full"] = charge_light.DEFAULTS["charge_full"]
     if data["lightbar_mode"] not in ("fixed", "battery"):

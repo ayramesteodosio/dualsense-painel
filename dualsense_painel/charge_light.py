@@ -12,7 +12,7 @@ DEFAULTS = {
     "charge_style": "breathe",
     "charge_period": 5.0,
     "charge_intensity": 100,
-    "charge_full": "off",
+    "charge_full": "green",
 }
 
 
