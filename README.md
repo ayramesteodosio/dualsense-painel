@@ -8,6 +8,12 @@ teste de botões e as informações de fábrica.
 
 No Linux a interface é GTK4 com libadwaita. No Windows e no macOS é Qt, com as mesmas funções.
 
+**In English:** a PS5 DualSense controller app for Windows, macOS and Linux. Charging mode hides the
+controller from Steam and games while it charges over USB, with an orange breathing light that turns green
+when full. It also sets the light bar, player LEDs and adaptive triggers, tests every button, stick, sensor
+and the audio, runs in the background and updates itself. The interface is in English and Portuguese and
+follows the system language. Downloads are on the [latest release](https://github.com/ayramesteodosio/dualsense-painel/releases/latest).
+
 <img src="docs/capturas/controle.png" width="32%" alt="Aba Controle"> <img src="docs/capturas/luzes.png" width="32%" alt="Aba Luzes"> <img src="docs/capturas/teste.png" width="32%" alt="Aba Teste">
 
 ## Funções
@@ -24,6 +30,7 @@ No Linux a interface é GTK4 com libadwaita. No Windows e no macOS é Qt, com as
 - Informações: modelo, cor de fábrica, placa (BDM), número de série, firmware, hardware e MAC.
 - Perfis, histórico de bateria, aviso de bateria baixa, atalho PS + Options para o modo carregar e
   desligamento por inatividade no Bluetooth.
+- Português e inglês: segue o idioma do sistema, e dá para trocar nos Ajustes.
 - Segundo plano: ao fechar a janela o app continua rodando (dá para desligar nos Ajustes), com modo
   carregar automático, avisos de bateria e atalho funcionando. "Iniciar com o sistema" é opcional, no
   instalador do Windows ou nos Ajustes. Só um app usa o controle por vez: abrir o outro faz o primeiro

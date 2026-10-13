@@ -4,6 +4,7 @@ import time
 
 from . import charge_light, config, factory, inputs, plataforma
 from .history import BatteryHistory
+from .idioma import _
 from .protocol import MODES_BY_KEY, OutputState, dark_state
 
 SHORTCUT_SECONDS = 2.0
@@ -192,7 +193,7 @@ class Session:
         try:
             config.save(self.cfg)
         except OSError as e:
-            self.listener.toast(f"Não consegui salvar as preferências: {e.strerror}")
+            self.listener.toast(_("Não consegui salvar as preferências: {erro}").format(erro=e.strerror))
         return False
 
     def set_charging(self, on, announce=True):
@@ -217,9 +218,9 @@ class Session:
         self._refresh_status()
         if announce and on and self._attached:
             if not self._avisar_cheio(forcar=True):
-                self.listener.toast("Modo carregar ligado")
+                self.listener.toast(_("Modo carregar ligado"))
         elif announce and not on:
-            self.listener.toast("De volta ao modo normal")
+            self.listener.toast(_("De volta ao modo normal"))
 
     def _avisar_cheio(self, forcar=False):
         if not (self.charging_mode and self._attached and self.battery_status == "Full"):
@@ -230,8 +231,8 @@ class Session:
         if not forcar and agora - self._aviso_cheio < 20:
             return False
         self._aviso_cheio = agora
-        self.listener.toast("O controle já está cheio, por isso a luz apagou. "
-                            "Para deixar acesa, mude \"Quando encher\" na luz do modo carregar.")
+        self.listener.toast(_("O controle já está cheio, por isso a luz apagou. "
+                              "Para deixar acesa, mude \"Quando encher\" na luz do modo carregar."))
         return True
 
     def _hide(self):
@@ -247,9 +248,9 @@ class Session:
         self.grab_failed = dev.grab()
         if not dev.ref.bluetooth:
             if plataforma.WINDOWS:
-                self.listener.toast("Para esconder o controle dos jogos no Windows, instale o HidHide")
+                self.listener.toast(_("Para esconder o controle dos jogos no Windows, instale o HidHide"))
             else:
-                self.listener.toast("Não consegui tirar o controle da Steam, só do desktop")
+                self.listener.toast(_("Não consegui tirar o controle da Steam, só do desktop"))
 
     def rumble(self, left, right, ms=500):
         if not self.device or self.charging_mode:
@@ -278,9 +279,9 @@ class Session:
         if not self.device or not self.device.ref.bluetooth:
             return False
         if not self.device.disconnect_bluetooth(mac):
-            self.listener.toast("Desligar pelo Bluetooth não está disponível neste sistema")
+            self.listener.toast(_("Desligar pelo Bluetooth não está disponível neste sistema"))
             return False
-        self.listener.toast("Desligando o controle")
+        self.listener.toast(_("Desligando o controle"))
         return True
 
     def regrab(self):
@@ -369,7 +370,7 @@ class Session:
         try:
             dev = self.backend.open(ref)
         except (OSError, ValueError) as e:
-            self.listener.toast(f"Sem acesso ao controle ({getattr(e, 'strerror', None) or e})")
+            self.listener.toast(_("Sem acesso ao controle ({erro})").format(erro=getattr(e, 'strerror', None) or e))
             return
         self.device = dev
         registrar(f"conectado: {ref.model} bluetooth={ref.bluetooth} caminho={ref.key}")

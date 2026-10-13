@@ -4,6 +4,7 @@ import threading
 import hid
 
 from .. import factory, firmware, plataforma
+from ..idioma import _
 from ..protocol import build_report
 from . import hidhide
 
@@ -174,7 +175,7 @@ class HidapiDevice:
             report = report[:USB_OUTPUT_SIZE]
         with self._lock:
             if self.dev.write(report) < 0:
-                raise OSError("falha ao escrever no controle")
+                raise OSError(_("falha ao escrever no controle"))
 
     def read_info(self):
         info = {"model": self.ref.model, "connection": "bluetooth" if self.ref.bluetooth else "usb",

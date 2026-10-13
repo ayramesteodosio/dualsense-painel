@@ -1,5 +1,7 @@
 import os
+import shlex
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -95,6 +97,26 @@ def definir(repo, ligado, raiz=None):
         _escrever(repo, comando(repo, raiz))
     else:
         _apagar(repo)
+
+
+def reiniciar(pacote, raiz=None):
+    if getattr(sys, "frozen", False):
+        partes = [sys.executable]
+    else:
+        partes = [sys.executable, "-m", pacote]
+    pid = os.getpid()
+    if plataforma.WINDOWS:
+        argumentos = ", ".join("'" + p.replace("'", "''") + "'" for p in partes[1:])
+        script = (f"Wait-Process -Id {pid} -ErrorAction SilentlyContinue; "
+                  f"Start-Process -FilePath '{partes[0]}'" + (f" -ArgumentList {argumentos}" if argumentos else "")
+                  + (f" -WorkingDirectory '{raiz}'" if raiz else ""))
+        subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script],
+                         creationflags=0x08000000, close_fds=True)
+        return
+    linha = " ".join(shlex.quote(p) for p in partes)
+    pasta = f"cd {shlex.quote(raiz)} && " if raiz else ""
+    script = f"while kill -0 {pid} 2>/dev/null; do sleep 0.2; done; {pasta}exec {linha}"
+    subprocess.Popen(["/bin/sh", "-c", script], start_new_session=True, close_fds=True)
 
 
 def _caminho_canal():

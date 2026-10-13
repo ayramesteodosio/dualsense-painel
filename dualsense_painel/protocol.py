@@ -1,6 +1,8 @@
 import zlib
 from dataclasses import dataclass, field
 
+from .idioma import N_
+
 USB_REPORT_ID = 0x02
 USB_REPORT_SIZE = 63
 BT_REPORT_ID = 0x31
@@ -142,35 +144,35 @@ class TriggerMode:
         return {p.key: p.default for p in self.params}
 
 
-_START = lambda default, low=0, high=9: Param("start", "Começa em", low, high, default, True)
-_END = lambda default, low=1, high=9: Param("end", "Termina em", low, high, default, True)
+_START = lambda default, low=0, high=9: Param("start", N_("Começa em"), low, high, default, True)
+_END = lambda default, low=1, high=9: Param("end", N_("Termina em"), low, high, default, True)
 
 TRIGGER_MODES = (
-    TriggerMode("off", "Livre", "Sem efeito, o gatilho fica solto como de fábrica.", (), effect_off),
+    TriggerMode("off", N_("Livre"), N_("Sem efeito, o gatilho fica solto como de fábrica."), (), effect_off),
     TriggerMode(
-        "feedback", "Resistência", "Fica duro a partir de um ponto do curso até o fim.",
-        (_START(2), Param("strength", "Força", 1, 8, 6)), effect_feedback),
+        "feedback", N_("Resistência"), N_("Fica duro a partir de um ponto do curso até o fim."),
+        (_START(2), Param("strength", N_("Força"), 1, 8, 6)), effect_feedback),
     TriggerMode(
-        "weapon", "Gatilho de arma", "Resistência num trecho que cede de uma vez, como um disparo.",
-        (_START(3, 2, 7), _END(6, 3, 8), Param("strength", "Força", 1, 8, 8)), effect_weapon),
+        "weapon", N_("Gatilho de arma"), N_("Resistência num trecho que cede de uma vez, como um disparo."),
+        (_START(3, 2, 7), _END(6, 3, 8), Param("strength", N_("Força"), 1, 8, 8)), effect_weapon),
     TriggerMode(
-        "bow", "Arco", "Puxa cada vez mais e dá um tranco ao soltar a corda.",
-        (_START(1, 0, 8), _END(6, 1, 8), Param("strength", "Força", 1, 8, 6),
-         Param("snap", "Tranco", 1, 8, 4)), effect_bow),
+        "bow", N_("Arco"), N_("Puxa cada vez mais e dá um tranco ao soltar a corda."),
+        (_START(1, 0, 8), _END(6, 1, 8), Param("strength", N_("Força"), 1, 8, 6),
+         Param("snap", N_("Tranco"), 1, 8, 4)), effect_bow),
     TriggerMode(
-        "vibration", "Vibração", "O gatilho vibra a partir de um ponto do curso.",
-        (_START(0), Param("amplitude", "Intensidade", 1, 8, 6),
-         Param("frequency", "Frequência (Hz)", 1, 255, 40)), effect_vibration),
+        "vibration", N_("Vibração"), N_("O gatilho vibra a partir de um ponto do curso."),
+        (_START(0), Param("amplitude", N_("Intensidade"), 1, 8, 6),
+         Param("frequency", N_("Frequência (Hz)"), 1, 255, 40)), effect_vibration),
     TriggerMode(
-        "galloping", "Galope", "Dois toques ritmados, como um cavalo.",
-        (_START(0, 0, 8), _END(9), Param("first_foot", "Primeiro toque", 0, 6, 1),
-         Param("second_foot", "Segundo toque", 1, 7, 4), Param("frequency", "Ritmo", 1, 255, 3)),
+        "galloping", N_("Galope"), N_("Dois toques ritmados, como um cavalo."),
+        (_START(0, 0, 8), _END(9), Param("first_foot", N_("Primeiro toque"), 0, 6, 1),
+         Param("second_foot", N_("Segundo toque"), 1, 7, 4), Param("frequency", N_("Ritmo"), 1, 255, 3)),
         effect_galloping),
     TriggerMode(
-        "machine", "Máquina", "Vibração que alterna entre duas intensidades.",
-        (_START(0, 0, 8), _END(9), Param("amplitude_a", "Intensidade A", 0, 7, 2),
-         Param("amplitude_b", "Intensidade B", 0, 7, 7), Param("frequency", "Frequência (Hz)", 1, 255, 20),
-         Param("period", "Período", 0, 255, 5)), effect_machine),
+        "machine", N_("Máquina"), N_("Vibração que alterna entre duas intensidades."),
+        (_START(0, 0, 8), _END(9), Param("amplitude_a", N_("Intensidade A"), 0, 7, 2),
+         Param("amplitude_b", N_("Intensidade B"), 0, 7, 7), Param("frequency", N_("Frequência (Hz)"), 1, 255, 20),
+         Param("period", N_("Período"), 0, 255, 5)), effect_machine),
 )
 MODES_BY_KEY = {m.key: m for m in TRIGGER_MODES}
 

@@ -8,7 +8,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from . import atualizacao, charge_light, config, segundo_plano
+from . import atualizacao, charge_light, config, idioma, segundo_plano
+from .idioma import N_, _
 from .protocol import MODES_BY_KEY, TRIGGER_MODES
 from .session import Session
 from .versao import VERSAO
@@ -22,13 +23,13 @@ RULES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                      "dados", "70-dualsense-painel.rules")
 
 PRESETS = [
-    ("Azul PlayStation", (0, 90, 255)), ("Branco", (255, 255, 255)), ("Vermelho", (255, 0, 0)),
-    ("Laranja", (255, 90, 0)), ("Amarelo", (255, 200, 0)), ("Verde", (0, 255, 40)),
-    ("Ciano", (0, 220, 255)), ("Roxo", (140, 0, 255)), ("Rosa", (255, 0, 140)),
+    (N_("Azul PlayStation"), (0, 90, 255)), (N_("Branco"), (255, 255, 255)), (N_("Vermelho"), (255, 0, 0)),
+    (N_("Laranja"), (255, 90, 0)), (N_("Amarelo"), (255, 200, 0)), (N_("Verde"), (0, 255, 40)),
+    (N_("Ciano"), (0, 220, 255)), (N_("Roxo"), (140, 0, 255)), (N_("Rosa"), (255, 0, 140)),
 ]
 
-STATUS_PT = {"Charging": "carregando", "Discharging": "na bateria", "Full": "carga completa",
-             "Not charging": "sem carregar"}
+STATUS_PT = {"Charging": N_("carregando"), "Discharging": N_("na bateria"), "Full": N_("carga completa"),
+             "Not charging": N_("sem carregar")}
 
 CSS = "\n".join(
     f".swatch-{i} {{ background: rgb{c}; min-width: 26px; min-height: 26px; padding: 0; }}"
@@ -45,7 +46,7 @@ CSS = "\n".join(
 
 class Window(Adw.ApplicationWindow):
     def __init__(self, app):
-        super().__init__(application=app, title="Painel do DualSense")
+        super().__init__(application=app, title=_("Painel do DualSense"))
         self.app = app
         self.set_default_size(540, 820)
 
@@ -56,14 +57,14 @@ class Window(Adw.ApplicationWindow):
         self.toasts = Adw.ToastOverlay()
         self.stack = Adw.ViewStack()
         header = Adw.HeaderBar()
-        switcher = Adw.ViewSwitcherTitle(stack=self.stack, title="Painel do DualSense")
+        switcher = Adw.ViewSwitcherTitle(stack=self.stack, title=_("Painel do DualSense"))
         header.set_title_widget(switcher)
         bottom = Adw.ViewSwitcherBar(stack=self.stack)
         switcher.bind_property("title-visible", bottom, "reveal", 0)
 
         self.empty = Adw.StatusPage(
-            icon_name="input-gaming-symbolic", title="Nenhum controle conectado",
-            description="Ligue o DualSense no cabo USB ou pareie pelo Bluetooth.")
+            icon_name="input-gaming-symbolic", title=_("Nenhum controle conectado"),
+            description=_("Ligue o DualSense no cabo USB ou pareie pelo Bluetooth."))
         self.outer = Gtk.Stack()
         self.outer.add_named(self.empty, "vazio")
         self.outer.add_named(self.stack, "controle")
@@ -80,9 +81,9 @@ class Window(Adw.ApplicationWindow):
         self._build_lights_page()
         self._build_triggers_page()
         self.teste = TestePage(self)
-        self.stack.add_titled(self.teste.widget, "teste", "Teste").set_icon_name("applications-engineering-symbolic")
+        self.stack.add_titled(self.teste.widget, "teste", _("Teste")).set_icon_name("applications-engineering-symbolic")
         self.info = InfoPage(self)
-        self.stack.add_titled(self.info.widget, "info", "Informações").set_icon_name("help-about-symbolic")
+        self.stack.add_titled(self.info.widget, "info", _("Informações")).set_icon_name("help-about-symbolic")
         self.stack.connect("notify::visible-child-name", lambda *_: self.info.refresh())
         self.connect("close-request", self._on_close)
 
@@ -116,16 +117,16 @@ class Window(Adw.ApplicationWindow):
         top.add(card)
         page.add(top)
 
-        group = Adw.PreferencesGroup(title="Modo carregar")
-        group.set_description(
+        group = Adw.PreferencesGroup(title=_("Modo carregar"))
+        group.set_description(_(
             "No cabo USB, o controle sai do sistema: desktop, Steam e jogos param de enxergá-lo, "
             "e as luzes apagam, menos a luz laranja de carga se ela estiver ligada. Pelo "
-            "Bluetooth, só os botões e o touchpad são bloqueados. A carga continua normal.")
-        self.connection_row = Adw.ActionRow(title="Conexão")
+            "Bluetooth, só os botões e o touchpad são bloqueados. A carga continua normal."))
+        self.connection_row = Adw.ActionRow(title=_("Conexão"))
         group.add(self.connection_row)
 
-        auto_row = Adw.ActionRow(title="Entrar sozinho ao ligar no cabo",
-                                 subtitle="Quando o controle aparecer pelo USB")
+        auto_row = Adw.ActionRow(title=_("Entrar sozinho ao ligar no cabo"),
+                                 subtitle=_("Quando o controle aparecer pelo USB"))
         self.auto_switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=self.cfg["auto_charge"])
         self.auto_switch.connect("notify::active", self._on_auto_changed)
         auto_row.add_suffix(self.auto_switch)
@@ -133,9 +134,9 @@ class Window(Adw.ApplicationWindow):
         group.add(auto_row)
 
         self.permission_row = Adw.ActionRow(
-            title="Touchpad ainda passa",
-            subtitle="Falta uma permissão para bloquear o touchpad e os sensores. Pede a senha uma vez.")
-        fix = Gtk.Button(label="Liberar", valign=Gtk.Align.CENTER)
+            title=_("Touchpad ainda passa"),
+            subtitle=_("Falta uma permissão para bloquear o touchpad e os sensores. Pede a senha uma vez."))
+        fix = Gtk.Button(label=_("Liberar"), valign=Gtk.Align.CENTER)
         fix.add_css_class("suggested-action")
         fix.connect("clicked", self._install_rules)
         self.permission_row.add_suffix(fix)
@@ -148,14 +149,14 @@ class Window(Adw.ApplicationWindow):
         self.ajustes = AjustesGroup(self)
         page.add(self.ajustes.widget)
 
-        page_ref = self.stack.add_titled(page, "inicio", "Controle")
+        page_ref = self.stack.add_titled(page, "inicio", _("Controle"))
         page_ref.set_icon_name("battery-good-charging-symbolic")
 
     def _build_charge_light_group(self):
-        group = Adw.PreferencesGroup(title="Luz no modo carregar",
-                                     description="Muda na hora, inclusive com o controle carregando.")
-        glow = Adw.ExpanderRow(title="Acender enquanto carrega", show_enable_switch=True,
-                               subtitle="Como o laranja do PS5 em repouso")
+        group = Adw.PreferencesGroup(title=_("Luz no modo carregar"),
+                                     description=_("Muda na hora, inclusive com o controle carregando."))
+        glow = Adw.ExpanderRow(title=_("Acender enquanto carrega"), show_enable_switch=True,
+                               subtitle=_("Como o laranja do PS5 em repouso"))
         glow.set_enable_expansion(self.cfg["charge_glow"])
         glow.set_expanded(self.cfg["charge_glow"])
         glow.connect("notify::enable-expansion", self._on_glow_changed)
@@ -165,15 +166,15 @@ class Window(Adw.ApplicationWindow):
         self.charge_color.set_rgba(self._rgba(self.cfg["charge_color"]))
         self.charge_color.connect("color-set", self._on_charge_color)
         reset = Gtk.Button(icon_name="edit-undo-symbolic", valign=Gtk.Align.CENTER,
-                           tooltip_text="Voltar ao laranja")
+                           tooltip_text=_("Voltar ao laranja"))
         reset.add_css_class("flat")
         reset.connect("clicked", self._on_charge_color_reset)
-        color_row = Adw.ActionRow(title="Cor")
+        color_row = Adw.ActionRow(title=_("Cor"))
         color_row.add_suffix(reset)
         color_row.add_suffix(self.charge_color)
         glow.add_row(color_row)
 
-        style = Adw.ComboRow(title="Estilo", model=Gtk.StringList.new(list(charge_light.STYLE_LABELS)))
+        style = Adw.ComboRow(title=_("Estilo"), model=Gtk.StringList.new([_(r) for r in charge_light.STYLE_LABELS]))
         style.set_selected(charge_light.STYLES.index(self.cfg["charge_style"]))
         style.connect("notify::selected", self._on_charge_choice, "charge_style", charge_light.STYLES)
         glow.add_row(style)
@@ -183,13 +184,13 @@ class Window(Adw.ApplicationWindow):
         speed.set_round_digits(1)
         speed.get_adjustment().set_step_increment(0.5)
         speed.connect("value-changed", self._on_charge_number, "charge_period", float)
-        glow.add_row(self._row("Duração do ciclo", speed, "Maior é mais lento"))
+        glow.add_row(self._row(_("Duração do ciclo"), speed, _("Maior é mais lento")))
 
         intensity = self._scale(5, 100, self.cfg["charge_intensity"], lambda v: f"{v:.0f}%")
         intensity.connect("value-changed", self._on_charge_number, "charge_intensity", int)
-        glow.add_row(self._row("Intensidade", intensity))
+        glow.add_row(self._row(_("Intensidade"), intensity))
 
-        full = Adw.ComboRow(title="Quando encher", model=Gtk.StringList.new(list(charge_light.FULL_LABELS)))
+        full = Adw.ComboRow(title=_("Quando encher"), model=Gtk.StringList.new([_(r) for r in charge_light.FULL_LABELS]))
         full.set_selected(charge_light.FULL_ACTIONS.index(self.cfg["charge_full"]))
         full.connect("notify::selected", self._on_charge_choice, "charge_full", charge_light.FULL_ACTIONS)
         glow.add_row(full)
@@ -199,8 +200,8 @@ class Window(Adw.ApplicationWindow):
         page = Adw.PreferencesPage()
         self.lights_page = page
 
-        bar = Adw.PreferencesGroup(title="Barra de luz")
-        color_row = Adw.ActionRow(title="Cor")
+        bar = Adw.PreferencesGroup(title=_("Barra de luz"))
+        color_row = Adw.ActionRow(title=_("Cor"))
         self.color_button = Gtk.ColorButton(valign=Gtk.Align.CENTER, use_alpha=False)
         self.color_button.set_rgba(self._rgba(self.cfg["color"]))
         self.color_button.connect("color-set", self._on_color_button)
@@ -211,7 +212,7 @@ class Window(Adw.ApplicationWindow):
                                min_children_per_line=5, column_spacing=6, row_spacing=6,
                                margin_top=10, margin_bottom=10, margin_start=10, margin_end=10)
         for i, (name, rgb) in enumerate(PRESETS):
-            b = Gtk.Button(tooltip_text=name)
+            b = Gtk.Button(tooltip_text=_(name))
             b.add_css_class("circular")
             b.add_css_class(f"swatch-{i}")
             b.connect("clicked", self._on_preset, rgb)
@@ -222,17 +223,17 @@ class Window(Adw.ApplicationWindow):
 
         self.intensity = self._scale(0, 100, self.cfg["intensity"], lambda v: f"{v:.0f}%")
         self.intensity.connect("value-changed", self._on_intensity)
-        bar.add(self._row("Intensidade", self.intensity))
-        self.lightbar_mode = Adw.ComboRow(title="Modo da barra de luz",
-                                          subtitle="Mostrar a bateria: verde, amarelo e vermelho conforme a carga",
-                                          model=Gtk.StringList.new(["Cor fixa", "Mostrar a bateria"]))
+        bar.add(self._row(_("Intensidade"), self.intensity))
+        self.lightbar_mode = Adw.ComboRow(title=_("Modo da barra de luz"),
+                                          subtitle=_("Mostrar a bateria: verde, amarelo e vermelho conforme a carga"),
+                                          model=Gtk.StringList.new([_("Cor fixa"), _("Mostrar a bateria")]))
         self.lightbar_mode.set_selected(1 if self.cfg["lightbar_mode"] == "battery" else 0)
         self.lightbar_mode.connect("notify::selected", self._on_lightbar_mode)
         bar.add(self.lightbar_mode)
         page.add(bar)
 
-        players = Adw.PreferencesGroup(title="LEDs do jogador",
-                                       description="Os cinco pontinhos embaixo do touchpad.")
+        players = Adw.PreferencesGroup(title=_("LEDs do jogador"),
+                                       description=_("Os cinco pontinhos embaixo do touchpad."))
         leds_box = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
         self.led_toggles = []
         for i in range(5):
@@ -242,54 +243,54 @@ class Window(Adw.ApplicationWindow):
             t.connect("toggled", self._on_led_toggle)
             self.led_toggles.append(t)
             leds_box.append(t)
-        players.add(self._row("Acesos", leds_box))
-        self.led_brightness = Adw.ComboRow(title="Brilho", model=Gtk.StringList.new(["Alto", "Médio", "Baixo"]))
+        players.add(self._row(_("Acesos"), leds_box))
+        self.led_brightness = Adw.ComboRow(title=_("Brilho"), model=Gtk.StringList.new([_("Alto"), _("Médio"), _("Baixo", "brilho")]))
         self.led_brightness.set_selected(self.cfg["led_brightness"])
         self.led_brightness.connect("notify::selected", self._on_simple, "led_brightness")
         players.add(self.led_brightness)
         page.add(players)
 
-        extras = Adw.PreferencesGroup(title="Outros")
-        self.mic_led = Adw.ComboRow(title="Luz do botão de microfone",
-                                    model=Gtk.StringList.new(["Apagada", "Acesa", "Pulsando"]))
+        extras = Adw.PreferencesGroup(title=_("Outros"))
+        self.mic_led = Adw.ComboRow(title=_("Luz do botão de microfone"),
+                                    model=Gtk.StringList.new([_("Apagada"), _("Acesa"), _("Pulsando")]))
         self.mic_led.set_selected(self.cfg["mic_led"])
         self.mic_led.connect("notify::selected", self._on_simple, "mic_led")
         extras.add(self.mic_led)
-        rumble = Gtk.Button(label="Testar", valign=Gtk.Align.CENTER)
+        rumble = Gtk.Button(label=_("Testar"), valign=Gtk.Align.CENTER)
         rumble.connect("clicked", self._test_rumble)
-        extras.add(self._row("Vibração", rumble, "Os dois motores por meio segundo"))
+        extras.add(self._row(_("Vibração"), rumble, _("Os dois motores por meio segundo")))
         page.add(extras)
 
         self.perfis = PerfisGroup(self)
         page.add(self.perfis.widget)
-        page_ref = self.stack.add_titled(page, "luzes", "Luzes")
+        page_ref = self.stack.add_titled(page, "luzes", _("Luzes"))
         page_ref.set_icon_name("display-brightness-symbolic")
 
     def _build_triggers_page(self):
         page = Adw.PreferencesPage()
         self.triggers_page = page
         self.trigger_ui = {}
-        for side, title in (("l2", "Gatilho esquerdo (L2)"), ("r2", "Gatilho direito (R2)")):
+        for side, title in (("l2", _("Gatilho esquerdo (L2)")), ("r2", _("Gatilho direito (R2)"))):
             group = Adw.PreferencesGroup(title=title)
-            combo = Adw.ComboRow(title="Efeito", model=Gtk.StringList.new([m.label for m in TRIGGER_MODES]))
+            combo = Adw.ComboRow(title=_("Efeito"), model=Gtk.StringList.new([_(m.label) for m in TRIGGER_MODES]))
             keys = [m.key for m in TRIGGER_MODES]
             combo.set_selected(keys.index(self.cfg["triggers"][side]["mode"]))
             combo.connect("notify::selected", self._on_trigger_mode, side)
             group.add(combo)
             level = Gtk.LevelBar(min_value=0, max_value=255, width_request=180, valign=Gtk.Align.CENTER)
-            level_row = self._row("Pressão agora", level, "Aperte para sentir o efeito")
+            level_row = self._row(_("Pressão agora"), level, _("Aperte para sentir o efeito"))
             group.add(level_row)
-            copy = Gtk.Button(label="Copiar para o outro", valign=Gtk.Align.CENTER)
+            copy = Gtk.Button(label=_("Copiar para o outro"), valign=Gtk.Align.CENTER)
             copy.add_css_class("flat")
             copy.connect("clicked", self._copy_trigger, side)
-            copy_row = self._row("Mesmo efeito no outro gatilho", copy)
+            copy_row = self._row(_("Mesmo efeito no outro gatilho"), copy)
             group.add(copy_row)
             self.trigger_ui[side] = {"group": group, "combo": combo, "level": level, "rows": [],
                                      "tail": [level_row, copy_row]}
             page.add(group)
             self._rebuild_trigger_params(side)
 
-        page_ref = self.stack.add_titled(page, "gatilhos", "Gatilhos")
+        page_ref = self.stack.add_titled(page, "gatilhos", _("Gatilhos"))
         page_ref.set_icon_name("input-gaming-symbolic")
 
     def _rebuild_trigger_params(self, side):
@@ -300,13 +301,13 @@ class Window(Adw.ApplicationWindow):
         ui["rows"] = []
         trig = self.cfg["triggers"][side]
         mode = MODES_BY_KEY[trig["mode"]]
-        ui["combo"].set_subtitle(mode.description)
+        ui["combo"].set_subtitle(_(mode.description))
         values = {**mode.defaults(), **trig.get("params", {})}
         for p in mode.params:
             fmt = (lambda v: f"{v * 10:.0f}%") if p.position else (lambda v: f"{v:.0f}")
             scale = self._scale(p.low, p.high, values[p.key], fmt)
             scale.connect("value-changed", self._on_trigger_param, side, p.key)
-            row = self._row(p.label, scale)
+            row = self._row(_(p.label), scale)
             group.add(row)
             ui["rows"].append(row)
         for row in ui["tail"]:
@@ -360,17 +361,17 @@ class Window(Adw.ApplicationWindow):
         pct, status = ses.battery_pct, ses.battery_status
         self.battery_label.set_label(f"{pct}%" if pct is not None else "--%")
         self.battery_bar.set_value(pct or 0)
-        self.battery_status.set_label(STATUS_PT.get(status, status or "bateria desconhecida"))
-        via = {"usb-detached": "cabo USB, fora do sistema", "usb": "cabo USB", "bluetooth": "Bluetooth"}
-        self.connection_row.set_subtitle(f"{ses.model} pelo {via[ses.connection]}")
+        self.battery_status.set_label(_(STATUS_PT.get(status, status or N_("bateria desconhecida"))))
+        via = {"usb-detached": _("cabo USB, fora do sistema"), "usb": _("cabo USB"), "bluetooth": "Bluetooth"}
+        self.connection_row.set_subtitle(_("{modelo} pelo {via}").format(modelo=ses.model, via=via[ses.connection]))
         self.ajustes.refresh()
         if self.stack.get_visible_child_name() == "info":
             self.info.refresh()
 
     def mode_changed(self):
         on = self.session.charging_mode
-        self.mode_label.set_label("Modo carregar" if on else "Modo normal")
-        self.mode_button.set_label("Voltar ao modo normal" if on else "Entrar no modo carregar")
+        self.mode_label.set_label(_("Modo carregar") if on else _("Modo normal"))
+        self.mode_button.set_label(_("Voltar ao modo normal") if on else _("Entrar no modo carregar"))
         for cls in ("suggested-action", "destructive-action"):
             self.mode_button.remove_css_class(cls)
         self.mode_button.add_css_class("destructive-action" if on else "suggested-action")
@@ -380,7 +381,7 @@ class Window(Adw.ApplicationWindow):
         failed = self.session.grab_failed
         self.permission_row.set_visible(on and bool([k for k in failed if k != "gamepad"]))
         if on and "gamepad" in failed:
-            self.toast("Não consegui bloquear os botões do controle")
+            self.toast(_("Não consegui bloquear os botões do controle"))
 
     def input(self, data):
         page = self.stack.get_visible_child_name() if self.get_visible() else None
@@ -420,13 +421,13 @@ class Window(Adw.ApplicationWindow):
         self.changed()
 
     def low_battery(self, pct):
-        n = Gio.Notification.new("Bateria do controle baixa")
-        n.set_body(f"O DualSense está com {pct}%. Hora de ligar no cabo.")
+        n = Gio.Notification.new(_("Bateria do controle baixa"))
+        n.set_body(_("O DualSense está com {pct}%. Hora de ligar no cabo.").format(pct=pct))
         self.app.send_notification("bateria-baixa", n)
 
     def charged(self):
-        n = Gio.Notification.new("Controle carregado")
-        n.set_body("Pode tirar do cabo ou voltar ao modo normal.")
+        n = Gio.Notification.new(_("Controle carregado"))
+        n.set_body(_("Pode tirar do cabo ou voltar ao modo normal."))
         self.app.send_notification("carregado", n)
 
     def _set_color(self, rgb):
@@ -515,7 +516,7 @@ class Window(Adw.ApplicationWindow):
         self._updating = False
         self._rebuild_trigger_params(other)
         self.changed()
-        self.toast("Efeito copiado")
+        self.toast(_("Efeito copiado"))
 
     def _test_rumble(self, _button):
         self.session.test_rumble()
@@ -527,7 +528,7 @@ class Window(Adw.ApplicationWindow):
         try:
             proc = Gio.Subprocess.new(["pkexec", "sh", "-c", cmd, RULES], Gio.SubprocessFlags.NONE)
         except GLib.Error as e:
-            self.toast(f"Não deu para pedir a senha: {e.message}")
+            self.toast(_("Não deu para pedir a senha: {erro}").format(erro=e.message))
             return
         proc.wait_check_async(None, self._rules_done)
 
@@ -535,13 +536,13 @@ class Window(Adw.ApplicationWindow):
         try:
             proc.wait_check_finish(result)
         except GLib.Error:
-            self.toast("Permissão não instalada")
+            self.toast(_("Permissão não instalada"))
             return
         GLib.timeout_add(800, self._regrab)
 
     def _regrab(self):
         if self.session.charging_mode and self.session.regrab():
-            self.toast("Touchpad bloqueado também")
+            self.toast(_("Touchpad bloqueado também"))
         return False
 
     def _on_close(self, _window):
@@ -579,9 +580,9 @@ class App(Adw.Application):
 
     def _busy(self):
         dialog = Gtk.MessageDialog(message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE,
-                                   text="O controle já está sendo usado",
-                                   secondary_text="Não consegui assumir o controle. Feche o outro app do DualSense e "
-                                                  "tente de novo.")
+                                   text=_("O controle já está sendo usado"),
+                                   secondary_text=_("Não consegui assumir o controle. Feche o outro app do DualSense "
+                                                    "e tente de novo."))
         self.add_window(dialog)
         dialog.connect("response", lambda d, _r: d.destroy())
         dialog.present()
@@ -659,38 +660,39 @@ class App(Adw.Application):
     def _nova_versao(self, tag, url, forcar=False):
         if (forcar or url != self._url_versao) and self.window:
             self._url_versao = url
-            toast = Adw.Toast(title=f"Versão {tag} disponível", timeout=0)
+            toast = Adw.Toast(title=_("Versão {versao} disponível").format(versao=tag), timeout=0)
             if atualizacao.pode_instalar("dualsense-painel"):
-                toast.set_button_label("Atualizar agora")
+                toast.set_button_label(_("Atualizar agora"))
                 toast.connect("button-clicked", lambda *_: self._atualizar(tag, url))
             else:
-                toast.set_button_label("Baixar")
+                toast.set_button_label(_("Baixar"))
                 toast.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
             self.window.toasts.add_toast(toast)
         return False
 
     def _atualizar(self, tag, url):
-        toast = Adw.Toast(title=f"Baixando a versão {tag}...", timeout=0)
+        toast = Adw.Toast(title=_("Baixando a versão {versao}...").format(versao=tag), timeout=0)
         self.window.toasts.add_toast(toast)
 
         def progresso(fracao):
-            GLib.idle_add(lambda: toast.set_title(f"Baixando a versão {tag}... {round(fracao * 100)}%") and False)
+            GLib.idle_add(lambda: toast.set_title(_("Baixando a versão {versao}... {pct}%").format(
+                versao=tag, pct=round(fracao * 100))) and False)
 
         def pronto(caminho):
             def instalar():
-                toast.set_title(f"Instalando a versão {tag}. O painel fecha e abre de novo sozinho.")
+                toast.set_title(_("Instalando a versão {versao}. O painel fecha e abre de novo sozinho.").format(versao=tag))
                 if atualizacao.instalar("dualsense-painel", caminho):
                     GLib.timeout_add(800, lambda: self.quit() and False)
                 else:
-                    toast.set_title("Não deu para instalar sozinho.")
+                    toast.set_title(_("Não deu para instalar sozinho."))
                 return False
             GLib.idle_add(instalar)
 
         def falhou(erro):
             def mostrar():
                 toast.dismiss()
-                novo = Adw.Toast(title=f"Não consegui baixar a atualização ({erro})", timeout=0)
-                novo.set_button_label("Abrir a página")
+                novo = Adw.Toast(title=_("Não consegui baixar a atualização ({erro})").format(erro=erro), timeout=0)
+                novo.set_button_label(_("Abrir a página"))
                 novo.connect("button-clicked", lambda *_: Gtk.show_uri(self.window, url, Gdk.CURRENT_TIME))
                 self.window.toasts.add_toast(novo)
                 return False
@@ -703,15 +705,16 @@ class App(Adw.Application):
             self._held = True
         if avisar and not self._avisou_fundo:
             self._avisou_fundo = True
-            n = Gio.Notification.new("O painel continua rodando")
-            n.set_body("Abra o Painel do DualSense pelo menu para ver a janela. Para fechar de vez, "
-                       "use Sair do app nos Ajustes.")
+            n = Gio.Notification.new(_("O painel continua rodando"))
+            n.set_body(_("Abra o Painel do DualSense pelo menu para ver a janela. Para fechar de vez, "
+                         "use Sair do app nos Ajustes."))
             self.send_notification("segundo-plano", n)
 
 
 def main():
+    idioma.definir(config.load()["idioma"])
     GLib.set_prgname(APP_ID)
-    GLib.set_application_name("Painel do DualSense")
+    GLib.set_application_name(_("Painel do DualSense"))
     app = App()
     argv = [a for a in sys.argv if a not in ("--carregar", "--normal", segundo_plano.FLAG)]
     mode = "carregar" if "--carregar" in sys.argv else "normal" if "--normal" in sys.argv else None

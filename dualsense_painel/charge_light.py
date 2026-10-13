@@ -1,9 +1,11 @@
 import math
 
+from .idioma import N_
+
 STYLES = ("breathe", "solid", "blink")
-STYLE_LABELS = ("Respirar", "Fixa", "Piscar")
+STYLE_LABELS = (N_("Respirar"), N_("Fixa"), N_("Piscar"))
 FULL_ACTIONS = ("off", "green", "keep")
-FULL_LABELS = ("Apagar", "Ficar verde", "Continuar igual")
+FULL_LABELS = (N_("Apagar"), N_("Ficar verde"), N_("Continuar igual"))
 FULL_GREEN = (0, 255, 40)
 
 DEFAULTS = {

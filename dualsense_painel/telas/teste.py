@@ -2,14 +2,16 @@ import math
 
 from gi.repository import Adw, GLib, Gtk
 
-from .. import audio
+from .. import audio, idioma
+from ..idioma import N_, _
 from ..tester import BUTTONS, DRIFT_TEXT, Tester
 
-STATUS_PT = {"Charging": "carregando", "Discharging": "na bateria", "Full": "carga completa"}
+STATUS_PT = {"Charging": N_("carregando"), "Discharging": N_("na bateria"), "Full": N_("carga completa")}
 
 
 def _fmt(value, digits=1):
-    return f"{value:.{digits}f}".replace(".", ",")
+    texto = f"{value:.{digits}f}"
+    return texto.replace(".", ",") if idioma.atual() == "pt" else texto
 
 
 def _accent(widget):
@@ -100,9 +102,9 @@ class TestePage:
         self.tester = Tester()
         self.mic = None
         self.widget = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
-        self.paused = Adw.StatusPage(icon_name="battery-good-charging-symbolic", title="Teste pausado",
-                                     description="No modo carregar o controle fica fora do sistema.")
-        back = Gtk.Button(label="Voltar ao modo normal", halign=Gtk.Align.CENTER)
+        self.paused = Adw.StatusPage(icon_name="battery-good-charging-symbolic", title=_("Teste pausado"),
+                                     description=_("No modo carregar o controle fica fora do sistema."))
+        back = Gtk.Button(label=_("Voltar ao modo normal"), halign=Gtk.Align.CENTER)
         back.add_css_class("pill")
         back.add_css_class("suggested-action")
         back.connect("clicked", lambda *_: self.win.set_charging(False))
@@ -120,41 +122,41 @@ class TestePage:
         return g
 
     def _build(self):
-        top = self._group("Teste do controle", "Aperte, gire e toque. Tudo aparece aqui ao vivo.")
+        top = self._group(_("Teste do controle"), _("Aperte, gire e toque. Tudo aparece aqui ao vivo."))
         bar = Gtk.Box(spacing=8)
         self.hz_label = Gtk.Label(label="-- Hz", hexpand=True, xalign=0)
         self.hz_label.add_css_class("mono")
-        restart = Gtk.Button(label="Recomeçar")
+        restart = Gtk.Button(label=_("Recomeçar"))
         restart.connect("clicked", self._restart)
-        report = Gtk.Button(label="Gerar relatório")
+        report = Gtk.Button(label=_("Gerar relatório"))
         report.add_css_class("suggested-action")
         report.connect("clicked", self._report)
         for w in (self.hz_label, restart, report):
             bar.append(w)
         top.add(bar)
 
-        self.buttons_group = self._group("Botões")
+        self.buttons_group = self._group(_("Botões"))
         flow = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, min_children_per_line=3,
                            max_children_per_line=5, column_spacing=6, row_spacing=6, homogeneous=True)
         self.chips = {}
         for key, label in BUTTONS:
-            chip = Gtk.Label(label=label)
+            chip = Gtk.Label(label=_(label))
             chip.add_css_class("chip")
             self.chips[key] = chip
             flow.insert(chip, -1)
         self.buttons_group.add(flow)
 
-        sticks = self._group("Analógicos", "Gire cada analógico encostando na borda para medir a circularidade.")
+        sticks = self._group(_("Analógicos"), _("Gire cada analógico encostando na borda para medir a circularidade."))
         box = Gtk.Box(spacing=12, homogeneous=True)
         self.stick_views, self.stick_labels = {}, {}
-        for side, name in (("l", "Esquerdo"), ("r", "Direito")):
+        for side, name in (("l", _("Esquerdo")), ("r", _("Direito"))):
             col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             title = Gtk.Label(label=name, xalign=0)
             title.add_css_class("heading")
             view = StickView(lambda s=side: self.tester.sticks[s])
             info = Gtk.Label(xalign=0, wrap=True)
             info.add_css_class("caption")
-            reset = Gtk.Button(label="Zerar circularidade", halign=Gtk.Align.START)
+            reset = Gtk.Button(label=_("Zerar circularidade"), halign=Gtk.Align.START)
             reset.add_css_class("flat")
             reset.connect("clicked", lambda _b, s=side: (self.tester.sticks[s].reset_circle(), self.stick_views[s].queue_draw()))
             for w in (title, view, info, reset):
@@ -163,7 +165,7 @@ class TestePage:
             self.stick_views[side], self.stick_labels[side] = view, info
         sticks.add(box)
 
-        triggers = self._group("Gatilhos")
+        triggers = self._group(_("Gatilhos"))
         self.trigger_bars, self.trigger_labels = {}, {}
         for side in ("l2", "r2"):
             bar = Gtk.LevelBar(min_value=0, max_value=255, width_request=160, valign=Gtk.Align.CENTER)
@@ -180,9 +182,9 @@ class TestePage:
         self.touch_label.add_css_class("caption")
         touch.add(self.touch_label)
 
-        motion = self._group("Movimento")
-        self.gyro_row = Adw.ActionRow(title="Giroscópio", subtitle="graus por segundo")
-        self.accel_row = Adw.ActionRow(title="Acelerômetro", subtitle="em g")
+        motion = self._group(_("Movimento"))
+        self.gyro_row = Adw.ActionRow(title=_("Giroscópio"), subtitle=_("graus por segundo"))
+        self.accel_row = Adw.ActionRow(title=_("Acelerômetro"), subtitle=_("em g"))
         self.gyro_value = Gtk.Label()
         self.accel_value = Gtk.Label()
         for row, value in ((self.gyro_row, self.gyro_value), (self.accel_row, self.accel_value)):
@@ -190,9 +192,9 @@ class TestePage:
             row.add_suffix(value)
             motion.add(row)
 
-        vib = self._group("Vibração")
+        vib = self._group(_("Vibração"))
         self.motor = {}
-        for key, title in (("left", "Motor esquerdo (forte)"), ("right", "Motor direito (fraco)")):
+        for key, title in (("left", _("Motor esquerdo (forte)")), ("right", _("Motor direito (fraco)"))):
             scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 255, 1)
             scale.set_value(180)
             scale.set_hexpand(True)
@@ -202,16 +204,16 @@ class TestePage:
             vib.add(row)
             self.motor[key] = scale
         pulses = Gtk.Box(spacing=8, halign=Gtk.Align.END, margin_top=8)
-        for label, which in (("Esquerdo", "left"), ("Direito", "right"), ("Os dois", "both")):
+        for label, which in ((_("Esquerdo"), "left"), (_("Direito"), "right"), (_("Os dois"), "both")):
             b = Gtk.Button(label=label)
             b.connect("clicked", self._pulse, which)
             pulses.append(b)
         vib.add(pulses)
 
-        self.audio_group = self._group("Áudio", "Funciona com o controle no cabo USB.")
-        self.speaker_btn = Gtk.Button(label="Tocar no alto-falante")
+        self.audio_group = self._group(_("Áudio"), _("Funciona com o controle no cabo USB."))
+        self.speaker_btn = Gtk.Button(label=_("Tocar no alto-falante"))
         self.speaker_btn.connect("clicked", self._tone, audio.SPEAKER)
-        self.phone_btn = Gtk.Button(label="Tocar no fone")
+        self.phone_btn = Gtk.Button(label=_("Tocar no fone"))
         self.phone_btn.connect("clicked", self._tone, audio.HEADPHONES)
         tones = Gtk.Box(spacing=8)
         tones.append(self.speaker_btn)
@@ -220,12 +222,12 @@ class TestePage:
         self.mic_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         self.mic_switch.connect("notify::active", self._mic_toggled)
         self.mic_bar = Gtk.LevelBar(min_value=0, max_value=1, width_request=120, valign=Gtk.Align.CENTER)
-        mic_row = Adw.ActionRow(title="Microfone", subtitle="Fale perto do controle")
+        mic_row = Adw.ActionRow(title=_("Microfone"), subtitle=_("Fale perto do controle"))
         mic_row.add_suffix(self.mic_bar)
         mic_row.add_suffix(self.mic_switch)
         self.audio_group.add(mic_row)
-        self.phone_row = Adw.ActionRow(title="Fone conectado")
-        self.phone_state = Gtk.Label(label="não")
+        self.phone_row = Adw.ActionRow(title=_("Fone conectado"))
+        self.phone_state = Gtk.Label(label=_("não"))
         self.phone_row.add_suffix(self.phone_state)
         self.audio_group.add(self.phone_row)
         self._refresh_static()
@@ -236,8 +238,9 @@ class TestePage:
                 chip.add_css_class("chip-done")
             else:
                 chip.remove_css_class("chip-done")
-        self.buttons_group.set_description(f"{len(self.tester.tested)} de {len(BUTTONS)} testados. "
-                                           "Cada botão fica verde depois de apertado uma vez.")
+        self.buttons_group.set_description(
+            _("{testados} de {total} testados. Cada botão fica verde depois de apertado uma vez.").format(
+                testados=len(self.tester.tested), total=len(BUTTONS)))
 
     def update(self, data):
         if self.tester.record(data):
@@ -250,26 +253,28 @@ class TestePage:
         for side in ("l", "r"):
             st = self.tester.sticks[side]
             coverage, error = st.circularity()
-            rest = f"repouso {_fmt(st.rest * 100)}%" if st.rest is not None else "medindo repouso"
-            circ = f"circularidade {_fmt(error * 100)}% de erro" if error is not None else "gire para medir"
-            self.stick_labels[side].set_label(
-                f"X {st.raw[0]}  Y {st.raw[1]}\n{rest} · {DRIFT_TEXT.get(st.drift(), 'medindo drift')}\n"
-                f"{circ} · contorno {coverage * 100:.0f}%")
+            rest = _("repouso {valor}%").format(valor=_fmt(st.rest * 100)) if st.rest is not None else _("medindo repouso")
+            circ = (_("circularidade {valor}% de erro").format(valor=_fmt(error * 100)) if error is not None
+                    else _("gire para medir"))
+            drift = _(DRIFT_TEXT.get(st.drift(), N_("medindo drift")))
+            contorno = _("contorno {valor}%").format(valor=f"{coverage * 100:.0f}")
+            self.stick_labels[side].set_label(f"X {st.raw[0]}  Y {st.raw[1]}\n{rest} · {drift}\n{circ} · {contorno}")
             self.stick_views[side].queue_draw()
         for side in ("l2", "r2"):
             value, best = data["triggers"][side], self.tester.max[side]
             self.trigger_bars[side].set_value(value)
             self.trigger_labels[side].set_subtitle(
-                f"agora {value} · máximo {best}{' · curso completo' if best >= 255 else ''}")
+                _("agora {valor} · máximo {maximo}").format(valor=value, maximo=best)
+                + (_(" · curso completo") if best >= 255 else ""))
         self.touch_view.touch = data["touch"]
         self.touch_view.click = data["buttons"].get("touchpad", False)
         self.touch_view.queue_draw()
         active = sum(1 for t in data["touch"] if t["active"])
-        self.touch_label.set_label(f"{active} dedo(s) agora · até {self.tester.touch_seen} visto(s) · "
-                                   f"clique {'ok' if self.tester.click_seen else 'não testado'}")
+        self.touch_label.set_label(_("{ativos} dedo(s) agora · até {vistos} visto(s) · clique {clique}").format(
+            ativos=active, vistos=self.tester.touch_seen, clique="ok" if self.tester.click_seen else _("não testado")))
         self.gyro_value.set_label("  ".join(f"{v:+7.1f}" for v in data["gyro"]))
         self.accel_value.set_label("  ".join(f"{v:+6.2f}" for v in data["accel"]))
-        self.phone_state.set_label("sim" if data.get("headphones") else "não")
+        self.phone_state.set_label(_("sim") if data.get("headphones") else _("não"))
         self.hz_label.set_label(f"{self.session.report_hz} Hz")
 
     def refresh_mode(self):
@@ -286,7 +291,7 @@ class TestePage:
         self._refresh_static()
         for v in self.stick_views.values():
             v.queue_draw()
-        self.win.toast("Teste recomeçado")
+        self.win.toast(_("Teste recomeçado"))
 
     def _pulse(self, _b, which):
         left = self.motor["left"].get_value() if which in ("left", "both") else 0
@@ -301,7 +306,7 @@ class TestePage:
             else:
                 self.tester.headphone_done = True
         else:
-            self.win.toast("Áudio do controle não encontrado")
+            self.win.toast(_("Áudio do controle não encontrado"))
 
     def _mic_toggled(self, switch, _pspec):
         if switch.get_active() and not self.mic:
@@ -309,7 +314,7 @@ class TestePage:
             if not self.mic.start():
                 self.mic = None
                 switch.set_active(False)
-                self.win.toast("Microfone do controle não encontrado")
+                self.win.toast(_("Microfone do controle não encontrado"))
         elif not switch.get_active():
             self.stop_mic()
 
@@ -328,10 +333,11 @@ class TestePage:
     def _report(self, _b):
         ses = self.session
         pct, status = ses.battery_pct, ses.battery_status
-        battery = f"{pct}%, {STATUS_PT.get(status, status or '')}".rstrip(", ") if pct is not None else "indisponível"
+        battery = (f"{pct}%, {_(STATUS_PT.get(status, status or ''))}".rstrip(", ") if pct is not None
+                   else _("indisponível"))
         text = self.tester.report(ses.info, battery, ses.report_hz)
-        dialog = Gtk.FileChooserNative.new("Salvar relatório", self.win, Gtk.FileChooserAction.SAVE,
-                                           "Salvar", "Cancelar")
+        dialog = Gtk.FileChooserNative.new(_("Salvar relatório"), self.win, Gtk.FileChooserAction.SAVE,
+                                           _("Salvar"), _("Cancelar"))
         dialog.set_current_name(f"relatorio-dualsense-{GLib.DateTime.new_now_local().format('%Y%m%d-%H%M')}.md")
 
         def done(d, response):
@@ -340,9 +346,9 @@ class TestePage:
                 try:
                     with open(path, "w", encoding="utf-8") as f:
                         f.write(text)
-                    self.win.toast(f"Relatório salvo em {path}")
+                    self.win.toast(_("Relatório salvo em {caminho}").format(caminho=path))
                 except OSError as e:
-                    self.win.toast(f"Não consegui salvar: {e.strerror}")
+                    self.win.toast(_("Não consegui salvar: {erro}").format(erro=e.strerror))
             d.destroy()
         dialog.connect("response", done)
         dialog.show()

@@ -6,6 +6,8 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath, QPalette, QPen
 from PySide6.QtWidgets import (QColorDialog, QGroupBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSlider,
                                QVBoxLayout, QWidget)
 
+from ..idioma import _
+
 
 def accent(widget):
     palette = widget.palette()
@@ -88,9 +90,9 @@ class ValueSlider(QWidget):
 class ColorButton(QPushButton):
     color_changed = Signal(list)
 
-    def __init__(self, rgb, title="Escolher cor"):
+    def __init__(self, rgb, title=None):
         super().__init__()
-        self.title = title
+        self.title = title or _("Escolher cor")
         self.setFixedSize(44, 28)
         self.set_rgb(rgb)
         self.clicked.connect(self._pick)
@@ -168,7 +170,7 @@ class BatteryChart(QWidget):
             muted = QColor(fg)
             muted.setAlphaF(0.55)
             p.setPen(muted)
-            p.drawText(self.rect(), Qt.AlignCenter, "O histórico aparece depois de alguns minutos com o controle ligado.")
+            p.drawText(self.rect(), Qt.AlignCenter, _("O histórico aparece depois de alguns minutos com o controle ligado."))
             return
         x = lambda t: pad + (t - start) / (now - start) * (w - 2 * pad)
         y = lambda v: pad + (1 - v / 100) * (h - 2 * pad)

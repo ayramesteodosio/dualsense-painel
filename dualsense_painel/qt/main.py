@@ -7,7 +7,8 @@ from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
-from .. import atualizacao, plataforma, segundo_plano
+from .. import atualizacao, config, idioma, plataforma, segundo_plano
+from ..idioma import _
 from ..versao import VERSAO
 from ..session import acquire_lock
 
@@ -50,13 +51,13 @@ class AppCtl:
         self.tray = None
         if QSystemTrayIcon.isSystemTrayAvailable():
             self.tray = QSystemTrayIcon(self.icon)
-            self.tray.setToolTip("Painel do DualSense")
+            self.tray.setToolTip(_("Painel do DualSense"))
             menu = QMenu()
-            self.open_action = QAction("Abrir o painel", menu)
+            self.open_action = QAction(_("Abrir o painel"), menu)
             self.open_action.triggered.connect(self.show)
-            self.mode_action = QAction("Entrar no modo carregar", menu)
+            self.mode_action = QAction(_("Entrar no modo carregar"), menu)
             self.mode_action.triggered.connect(self.toggle_mode)
-            self.quit_action = QAction("Sair", menu)
+            self.quit_action = QAction(_("Sair"), menu)
             self.quit_action.triggered.connect(self.quit)
             for action in (self.open_action, self.mode_action, self.quit_action):
                 menu.addAction(action)
@@ -101,9 +102,9 @@ class AppCtl:
         self._url_versao = url
         self._tag_versao = tag
         if not self.window.isVisible():
-            self.notify(f"Versão {tag} disponível", "Abra o painel para atualizar.")
+            self.notify(_("Versão {versao} disponível").format(versao=tag), _("Abra o painel para atualizar."))
         if self.tray and not getattr(self, "acao_versao", None):
-            acao = QAction(f"Atualizar para a versão {tag}", self.menu)
+            acao = QAction(_("Atualizar para a versão {versao}").format(versao=tag), self.menu)
             acao.triggered.connect(self.show)
             self.menu.insertAction(self.menu.actions()[0], acao)
             self.acao_versao = acao
@@ -120,7 +121,7 @@ class AppCtl:
         if atualizacao.instalar("dualsense-painel", caminho):
             QTimer.singleShot(600, self.quit)
         else:
-            self.window.falha_versao("não deu para instalar sozinho", self._abrir_versao)
+            self.window.falha_versao(_("não deu para instalar sozinho"), self._abrir_versao)
 
     def _abrir_versao(self):
         if self._url_versao:
@@ -129,7 +130,8 @@ class AppCtl:
     def avisar_fundo(self):
         if not self._avisou_fundo:
             self._avisou_fundo = True
-            self.notify("O painel continua rodando", "Ele segue na bandeja do sistema. Para fechar de vez, use Sair.")
+            self.notify(_("O painel continua rodando"),
+                        _("Ele segue na bandeja do sistema. Para fechar de vez, use Sair."))
 
     def tray_available(self):
         return self.tray is not None
@@ -145,9 +147,9 @@ class AppCtl:
     def update_tray(self):
         if self.tray:
             on = self.window.session.charging_mode if hasattr(self, "window") else False
-            self.mode_action.setText("Voltar ao modo normal" if on else "Entrar no modo carregar")
+            self.mode_action.setText(_("Voltar ao modo normal") if on else _("Entrar no modo carregar"))
             pct = self.window.session.battery_pct if hasattr(self, "window") else None
-            self.tray.setToolTip("Painel do DualSense" + (f": {pct}%" if pct is not None else ""))
+            self.tray.setToolTip(_("Painel do DualSense") + (f": {pct}%" if pct is not None else ""))
 
     def notify(self, title, body):
         if self.tray:
@@ -190,8 +192,10 @@ def main(argv=None):
     app = QApplication([a for a in argv if a not in ("--carregar", "--normal", segundo_plano.FLAG)])
     if plataforma.WINDOWS:
         app.setStyle("Fusion")
+    idioma.definir(config.load()["idioma"])
     traducao = QTranslator(app)
-    if traducao.load(QLocale("pt_BR"), "qtbase", "_", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+    if idioma.atual() == "pt" and traducao.load(QLocale("pt_BR"), "qtbase", "_",
+                                                 QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
         app.installTranslator(traducao)
     app.setQuitOnLastWindowClosed(False)
     lock = acquire_lock()
@@ -202,8 +206,8 @@ def main(argv=None):
             return 0
         estado, lock = segundo_plano.obter_controle("dualsense-painel")
         if estado != "livre":
-            QMessageBox.information(None, "Painel do DualSense", "Não consegui assumir o controle. Feche o outro app "
-                                                                 "do DualSense e tente de novo.")
+            QMessageBox.information(None, _("Painel do DualSense"), _("Não consegui assumir o controle. Feche o outro "
+                                                                    "app do DualSense e tente de novo."))
             return 1
     ctl = AppCtl(app, mode, escondido)
     segundo_plano.Canal("dualsense-painel", lock, ctl.aviso.canal.emit)

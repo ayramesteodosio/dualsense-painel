@@ -18,6 +18,7 @@ DEFAULTS = {
     "low_battery": 20,
     "idle_off": 0,
     "segundo_plano": True,
+    "idioma": "auto",
     "profiles": {},
     **charge_light.DEFAULTS,
     "triggers": {"l2": {"mode": "off", "params": {}}, "r2": {"mode": "off", "params": {}}},

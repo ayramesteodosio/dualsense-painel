@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 
@@ -7,7 +8,9 @@ ICON = os.path.join(ROOT, "empacotar", "icones", "dualsense-painel.ico" if sys.p
 a = Analysis(
     [os.path.join(ROOT, "empacotar", "iniciar.py")],
     pathex=[ROOT],
-    datas=[(os.path.join(ROOT, "dados", "com.ayrames.DualSensePainel.svg"), "dados")],
+    datas=[(os.path.join(ROOT, "dados", "com.ayrames.DualSensePainel.svg"), "dados")]
+          + [(f, os.path.join("dualsense_painel", "traducoes"))
+             for f in glob.glob(os.path.join(ROOT, "dualsense_painel", "traducoes", "*.json"))],
     hiddenimports=["dualsense_painel.backends.hidapi_backend", "dualsense_painel.backends.hidhide",
                    "dualsense_painel.audio_portable", "hid", "PySide6.QtSvg"],
     excludes=["gi", "dualsense_painel.app", "dualsense_painel.telas", "dualsense_painel.audio_pulse",

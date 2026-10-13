@@ -1,16 +1,18 @@
 import math
 import time
 
+from .idioma import N_, _
+
 BUTTONS = (
-    ("triangle", "Triângulo"), ("circle", "Círculo"), ("cross", "Xis"), ("square", "Quadrado"),
-    ("up", "Cima"), ("down", "Baixo"), ("left", "Esquerda"), ("right", "Direita"),
+    ("triangle", N_("Triângulo")), ("circle", N_("Círculo")), ("cross", N_("Xis")), ("square", N_("Quadrado")),
+    ("up", N_("Cima")), ("down", N_("Baixo")), ("left", N_("Esquerda")), ("right", N_("Direita")),
     ("l1", "L1"), ("r1", "R1"), ("l2", "L2"), ("r2", "R2"), ("l3", "L3"), ("r3", "R3"),
-    ("create", "Create"), ("options", "Options"), ("ps", "PS"), ("touchpad", "Clique do touchpad"),
-    ("mic", "Mudo"),
+    ("create", "Create"), ("options", "Options"), ("ps", "PS"), ("touchpad", N_("Clique do touchpad")),
+    ("mic", N_("Mudo")),
 )
 BINS = 72
 TRAIL = 40
-DRIFT_TEXT = {"ok": "Sem drift", "warn": "Atenção", "bad": "Drift"}
+DRIFT_TEXT = {"ok": N_("Sem drift"), "warn": N_("Atenção"), "bad": N_("Drift")}
 
 
 def normalize(value):
@@ -105,47 +107,52 @@ class Tester:
 
         def v(key):
             value = info.get(key)
-            return str(value) if value else "indisponível"
+            return str(value) if value else _("indisponível")
 
-        missing = [label for key, label in BUTTONS if key not in self.tested]
+        missing = [_(label) for key, label in BUTTONS if key not in self.tested]
         lines = [
-            "# Relatório do DualSense", "",
-            f"Gerado em {time.strftime('%d/%m/%Y %H:%M')}", "",
-            "## Controle", "",
-            f"- Modelo: {v('model')}",
-            f"- Cor de fábrica: {info.get('colorPt') or 'indisponível'}",
-            f"- Placa: {v('board')}",
-            f"- Número de série: {v('serial')}",
-            f"- Firmware: {v('firmware')}",
-            f"- Hardware: {v('hardware')}",
-            f"- Data do firmware: {v('build')}",
-            f"- Endereço MAC: {v('mac')}",
-            f"- Bateria: {battery}",
-            f"- Taxa de atualização: {hz} Hz", "",
-            "## Botões", "",
-            f"- Testados: {len(self.tested)} de {len(BUTTONS)}",
-            f"- Faltando: {', '.join(missing) if missing else 'nenhum'}", "",
-            "## Analógicos", "",
+            _("# Relatório do DualSense"), "",
+            _("Gerado em {data}").format(data=time.strftime(_("%d/%m/%Y %H:%M"))), "",
+            _("## Controle"), "",
+            _("- Modelo: {valor}").format(valor=v('model')),
+            _("- Cor de fábrica: {valor}").format(valor=_(info['colorPt']) if info.get('colorPt') else _("indisponível")),
+            _("- Placa: {valor}").format(valor=v('board')),
+            _("- Número de série: {valor}").format(valor=v('serial')),
+            _("- Firmware: {valor}").format(valor=v('firmware')),
+            _("- Hardware: {valor}").format(valor=v('hardware')),
+            _("- Data do firmware: {valor}").format(valor=v('build')),
+            _("- Endereço MAC: {valor}").format(valor=v('mac')),
+            _("- Bateria: {valor}").format(valor=battery),
+            _("- Taxa de atualização: {hz} Hz").format(hz=hz), "",
+            _("## Botões"), "",
+            _("- Testados: {feitos} de {total}").format(feitos=len(self.tested), total=len(BUTTONS)),
+            _("- Faltando: {lista}").format(lista=', '.join(missing) if missing else _("nenhum")), "",
+            _("## Analógicos"), "",
         ]
-        for side, name in (("l", "Esquerdo"), ("r", "Direito")):
+        for side, name in (("l", _("Esquerdo")), ("r", _("Direito"))):
             st = self.sticks[side]
             coverage, error = st.circularity()
-            rest = f"{st.rest * 100:.1f}%" if st.rest is not None else "não medido"
-            lines.append(f"- {name}: repouso {rest}, {DRIFT_TEXT.get(st.drift(), 'drift não medido')}, "
-                         f"circularidade {f'{error * 100:.1f}% de erro' if error is not None else 'não medida'} "
-                         f"({coverage * 100:.0f}% do contorno)")
+            rest = f"{st.rest * 100:.1f}%" if st.rest is not None else _("não medido")
+            circle = _("{erro:.1f}% de erro").format(erro=error * 100) if error is not None else _("não medida")
+            lines.append(_("- {lado}: repouso {repouso}, {drift}, circularidade {circularidade} "
+                           "({contorno:.0f}% do contorno)").format(
+                lado=name, repouso=rest, drift=_(DRIFT_TEXT.get(st.drift(), N_("drift não medido"))),
+                circularidade=circle, contorno=coverage * 100))
         lines += [
-            "", "## Gatilhos", "",
-            f"- L2: máximo {self.max['l2']} de 255{' (curso completo)' if self.max['l2'] >= 255 else ''}",
-            f"- R2: máximo {self.max['r2']} de 255{' (curso completo)' if self.max['r2'] >= 255 else ''}",
-            "", "## Sensores e extras", "",
-            f"- Touchpad: até {self.touch_seen} dedo(s), clique {'ok' if self.click_seen else 'não testado'}",
-            f"- Giroscópio: {'ok' if self.gyro_seen else 'não testado'}",
-            f"- Acelerômetro: {'ok' if self.accel_seen else 'não testado'}",
-            f"- Vibração: {'testada' if self.vibration_done else 'não testada'}",
-            f"- Alto-falante: {'testado' if self.speaker_done else 'não testado'}",
-            f"- Fone: {'testado' if self.headphone_done else 'não testado'}",
-            f"- Microfone: {'pico de ' + format(self.mic_peak * 100, '.0f') + '%' if self.mic_peak else 'não testado'}",
+            "", _("## Gatilhos"), "",
+            *((_("- {gatilho}: máximo {valor} de 255 (curso completo)") if self.max[k] >= 255
+               else _("- {gatilho}: máximo {valor} de 255")).format(gatilho=k.upper(), valor=self.max[k])
+              for k in ("l2", "r2")),
+            "", _("## Sensores e extras"), "",
+            _("- Touchpad: até {dedos} dedo(s), clique {clique}").format(
+                dedos=self.touch_seen, clique="ok" if self.click_seen else _("não testado")),
+            _("- Giroscópio: {estado}").format(estado="ok" if self.gyro_seen else _("não testado")),
+            _("- Acelerômetro: {estado}").format(estado="ok" if self.accel_seen else _("não testado")),
+            _("- Vibração: {estado}").format(estado=_("testada") if self.vibration_done else _("não testada")),
+            _("- Alto-falante: {estado}").format(estado=_("testado") if self.speaker_done else _("não testado")),
+            _("- Fone: {estado}").format(estado=_("testado") if self.headphone_done else _("não testado")),
+            _("- Microfone: {estado}").format(
+                estado=_("pico de {pico:.0f}%").format(pico=self.mic_peak * 100) if self.mic_peak else _("não testado")),
             "",
         ]
         return "\n".join(lines)

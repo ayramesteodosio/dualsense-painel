@@ -7,8 +7,10 @@ ln -sf "$DIR/dualsense-painel" "$HOME/.local/bin/dualsense-painel"
 cat > "$APPS/com.ayrames.DualSensePainel.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Painel do DualSense
-Comment=Cor da luz, gatilhos adaptativos e modo carregar do controle do PS5
+Name=DualSense Panel
+Name[pt_BR]=Painel do DualSense
+Comment=Light bar color, adaptive triggers and charging mode for the PS5 controller
+Comment[pt_BR]=Cor da luz, gatilhos adaptativos e modo carregar do controle do PS5
 Exec=$DIR/dualsense-painel
 Icon=$HOME/.local/share/icons/hicolor/scalable/apps/com.ayrames.DualSensePainel.svg
 StartupWMClass=com.ayrames.DualSensePainel

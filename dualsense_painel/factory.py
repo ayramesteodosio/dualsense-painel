@@ -3,6 +3,7 @@ import os
 import time
 
 from . import plataforma
+from .idioma import N_
 
 SEND_ID = 0x80
 RECV_ID = 0x81
@@ -16,27 +17,27 @@ MIN_FIRMWARE = 65655
 CACHE = os.path.join(plataforma.data_dir(), "controles.json")
 
 COLORS = {
-    "00": ("White", "Branco", "#f1f2f4"),
-    "01": ("Midnight Black", "Preto Meia-Noite", "#1c1d22"),
-    "02": ("Cosmic Red", "Vermelho Cósmico", "#9b1b24"),
-    "03": ("Nova Pink", "Rosa Nova", "#f4b9c9"),
-    "04": ("Galactic Purple", "Roxo Galáctico", "#4a2a7d"),
-    "05": ("Starlight Blue", "Azul Estelar", "#9fc4e8"),
-    "06": ("Grey Camouflage", "Camuflado Cinza", "#8b8f94"),
-    "07": ("Volcanic Red", "Vermelho Vulcânico", "#a8161c"),
-    "08": ("Sterling Silver", "Prata Esterlina", "#c3c7cc"),
-    "09": ("Cobalt Blue", "Azul Cobalto", "#1f50a6"),
-    "10": ("Chroma Teal", "Chroma Turquesa", "#2aa8a4"),
-    "11": ("Chroma Indigo", "Chroma Índigo", "#3d409f"),
-    "12": ("Chroma Pearl", "Chroma Pérola", "#e9e4ef"),
-    "30": ("30th Anniversary", "Edição 30 anos", "#b9bcc2"),
-    "Z1": ("God of War Ragnarok", "Edição God of War Ragnarök", "#7fa6c9"),
-    "Z2": ("Spider-Man 2", "Edição Spider-Man 2", "#b3141c"),
-    "Z3": ("Astro Bot", "Edição Astro Bot", "#2a6fdb"),
-    "Z4": ("Fortnite", "Edição Fortnite", "#3c7be0"),
-    "Z6": ("The Last of Us", "Edição The Last of Us", "#4f5a4a"),
-    "ZB": ("Icon Blue Limited Edition", "Edição Icon Blue", "#1b4fd6"),
-    "ZE": ("Genshin Impact", "Edição Genshin Impact", "#e9e1d3"),
+    "00": ("White", N_("Branco"), "#f1f2f4"),
+    "01": ("Midnight Black", N_("Preto Meia-Noite"), "#1c1d22"),
+    "02": ("Cosmic Red", N_("Vermelho Cósmico"), "#9b1b24"),
+    "03": ("Nova Pink", N_("Rosa Nova"), "#f4b9c9"),
+    "04": ("Galactic Purple", N_("Roxo Galáctico"), "#4a2a7d"),
+    "05": ("Starlight Blue", N_("Azul Estelar"), "#9fc4e8"),
+    "06": ("Grey Camouflage", N_("Camuflado Cinza"), "#8b8f94"),
+    "07": ("Volcanic Red", N_("Vermelho Vulcânico"), "#a8161c"),
+    "08": ("Sterling Silver", N_("Prata Esterlina"), "#c3c7cc"),
+    "09": ("Cobalt Blue", N_("Azul Cobalto"), "#1f50a6"),
+    "10": ("Chroma Teal", N_("Chroma Turquesa"), "#2aa8a4"),
+    "11": ("Chroma Indigo", N_("Chroma Índigo"), "#3d409f"),
+    "12": ("Chroma Pearl", N_("Chroma Pérola"), "#e9e4ef"),
+    "30": ("30th Anniversary", N_("Edição 30 anos"), "#b9bcc2"),
+    "Z1": ("God of War Ragnarok", N_("Edição God of War Ragnarök"), "#7fa6c9"),
+    "Z2": ("Spider-Man 2", N_("Edição Spider-Man 2"), "#b3141c"),
+    "Z3": ("Astro Bot", N_("Edição Astro Bot"), "#2a6fdb"),
+    "Z4": ("Fortnite", N_("Edição Fortnite"), "#3c7be0"),
+    "Z6": ("The Last of Us", N_("Edição The Last of Us"), "#4f5a4a"),
+    "ZB": ("Icon Blue Limited Edition", N_("Edição Icon Blue"), "#1b4fd6"),
+    "ZE": ("Genshin Impact", N_("Edição Genshin Impact"), "#e9e1d3"),
 }
 BOARDS = {"1": "BDM-010", "2": "BDM-020", "3": "BDM-030", "4": "BDM-040", "5": "BDM-050"}
 

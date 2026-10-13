@@ -22,8 +22,10 @@ chmod 755 "$PKG/usr/bin/dualsense-painel"
 cat > "$PKG/usr/share/applications/com.ayrames.DualSensePainel.desktop" <<'DESKTOP'
 [Desktop Entry]
 Type=Application
-Name=Painel do DualSense
-Comment=Cor da luz, gatilhos adaptativos e modo carregar do controle do PS5
+Name=DualSense Panel
+Name[pt_BR]=Painel do DualSense
+Comment=Light bar color, adaptive triggers and charging mode for the PS5 controller
+Comment[pt_BR]=Cor da luz, gatilhos adaptativos e modo carregar do controle do PS5
 Exec=dualsense-painel
 Icon=com.ayrames.DualSensePainel
 StartupWMClass=com.ayrames.DualSensePainel

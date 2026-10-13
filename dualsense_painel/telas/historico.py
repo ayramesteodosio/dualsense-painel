@@ -3,6 +3,8 @@ import time
 
 from gi.repository import Gtk
 
+from ..idioma import _
+
 HOURS = 48
 
 
@@ -43,7 +45,7 @@ class BatteryChart(Gtk.DrawingArea):
             cr.set_source_rgba(fg.red, fg.green, fg.blue, 0.5)
             cr.set_font_size(12)
             cr.move_to(pad + 4, h / 2)
-            cr.show_text("O histórico aparece depois de alguns minutos com o controle ligado.")
+            cr.show_text(_("O histórico aparece depois de alguns minutos com o controle ligado."))
             return
         x = lambda t: pad + (t - start) / (now - start) * (w - 2 * pad)
         y = lambda p: pad + (1 - p / 100) * (h - 2 * pad)

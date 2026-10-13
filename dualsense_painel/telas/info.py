@@ -2,14 +2,16 @@ import math
 
 from gi.repository import Adw, Gdk, Gtk
 
+from ..idioma import N_, _
+
 FIELDS = (
-    ("model", "Modelo"), ("color", "Cor de fábrica"), ("board", "Placa (BDM)"), ("serial", "Número de série"),
-    ("firmware", "Firmware"), ("hardware", "Hardware"), ("update", "Versão de atualização"),
-    ("build", "Data do firmware"), ("mac", "Endereço MAC"), ("connection", "Conexão"),
-    ("hz", "Taxa de atualização"), ("battery", "Bateria"),
+    ("model", N_("Modelo")), ("color", N_("Cor de fábrica")), ("board", N_("Placa (BDM)")),
+    ("serial", N_("Número de série")), ("firmware", "Firmware"), ("hardware", "Hardware"),
+    ("update", N_("Versão de atualização")), ("build", N_("Data do firmware")), ("mac", N_("Endereço MAC")),
+    ("connection", N_("Conexão")), ("hz", N_("Taxa de atualização")), ("battery", N_("Bateria")),
 )
-CONNECTION = {"usb": "Cabo USB", "bluetooth": "Bluetooth", "usb-detached": "Cabo USB, no modo carregar"}
-STATUS = {"Charging": "carregando", "Discharging": "na bateria", "Full": "carga completa"}
+CONNECTION = {"usb": N_("Cabo USB"), "bluetooth": "Bluetooth", "usb-detached": N_("Cabo USB, no modo carregar")}
+STATUS = {"Charging": N_("carregando"), "Discharging": N_("na bateria"), "Full": N_("carga completa")}
 
 
 class Swatch(Gtk.DrawingArea):
@@ -34,17 +36,17 @@ class InfoPage:
         self.win = window
         self.session = window.session
         self.widget = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Informações do controle",
-                                     description="Cor, placa e número de série são lidos pelo cabo USB e "
-                                                 "ficam guardados para aparecer também no Bluetooth.")
+        group = Adw.PreferencesGroup(title=_("Informações do controle"),
+                                     description=_("Cor, placa e número de série são lidos pelo cabo USB e "
+                                                   "ficam guardados para aparecer também no Bluetooth."))
         self.widget.add(group)
         self.rows, self.values = {}, {}
         for key, title in FIELDS:
-            row = Adw.ActionRow(title=title, subtitle="Indisponível")
+            row = Adw.ActionRow(title=_(title), subtitle=_("Indisponível"))
             if key == "color":
                 self.swatch = Swatch()
                 row.add_prefix(self.swatch)
-            copy = Gtk.Button(icon_name="edit-copy-symbolic", valign=Gtk.Align.CENTER, tooltip_text="Copiar")
+            copy = Gtk.Button(icon_name="edit-copy-symbolic", valign=Gtk.Align.CENTER, tooltip_text=_("Copiar"))
             copy.add_css_class("flat")
             copy.connect("clicked", self._copy, key)
             row.add_suffix(copy)
@@ -54,20 +56,20 @@ class InfoPage:
     def _value(self, key):
         ses, info = self.session, self.session.info or {}
         if key == "connection":
-            return CONNECTION.get(ses.connection)
+            return _(CONNECTION[ses.connection]) if ses.connection in CONNECTION else None
         if key == "hz":
             return f"{ses.report_hz} Hz" if ses.report_hz else None
         if key == "battery":
             if ses.battery_pct is None:
                 return None
-            return f"{ses.battery_pct}%, {STATUS.get(ses.battery_status, '')}".rstrip(", ")
+            return f"{ses.battery_pct}%, {_(STATUS.get(ses.battery_status, ''))}".rstrip(", ")
         if key == "model":
             return info.get("model") or ses.model
         if key == "color":
             if info.get("colorPt"):
-                english = info.get("color")
-                return info["colorPt"] + (f" ({english})" if english and english != info["colorPt"] else "")
-            return f"Código {info['colorCode']}" if info.get("colorCode") else None
+                nome, english = _(info["colorPt"]), info.get("color")
+                return nome + (f" ({english})" if english and english != nome else "")
+            return _("Código {codigo}").format(codigo=info["colorCode"]) if info.get("colorCode") else None
         value = info.get(key)
         return str(value) if value else None
 
@@ -75,7 +77,7 @@ class InfoPage:
         for key, row in self.rows.items():
             value = self._value(key)
             self.values[key] = value
-            row.set_subtitle(value or "Indisponível")
+            row.set_subtitle(value or _("Indisponível"))
         hex_color = (self.session.info or {}).get("colorHex")
         rgba = Gdk.RGBA()
         self.swatch.rgba = rgba if hex_color and rgba.parse(hex_color) else None
@@ -85,4 +87,4 @@ class InfoPage:
         value = self.values.get(key)
         if value:
             self.win.get_clipboard().set(value)
-            self.win.toast("Copiado")
+            self.win.toast(_("Copiado"))

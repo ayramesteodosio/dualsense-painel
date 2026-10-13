@@ -10,6 +10,7 @@ import threading
 import urllib.request
 
 from . import plataforma
+from .idioma import _
 
 DONO = "ayramesteodosio"
 BASES = {"dualsense-painel": "Painel-DualSense", "dualsense-studio": "DualSense-Studio"}
@@ -65,8 +66,8 @@ def verificar(repo, atual, quando_houver, quando_nao=None):
 
 def texto_sem_novidade(encontrou, atual):
     if not encontrou:
-        return "Não consegui procurar atualizações agora. Confira a conexão com a internet."
-    return f"Você já está na versão mais nova ({atual})."
+        return _("Não consegui procurar atualizações agora. Confira a conexão com a internet.")
+    return _("Você já está na versão mais nova ({versao}).").format(versao=atual)
 
 
 def nome_do_arquivo(repo, tag):
