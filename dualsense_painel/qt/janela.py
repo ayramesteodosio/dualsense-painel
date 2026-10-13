@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QFrame, QGridL
                                QMainWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QStackedWidget,
                                QTabWidget, QVBoxLayout, QWidget)
 
-from .. import audio, charge_light, config, profiles
+from .. import audio, charge_light, config, profiles, segundo_plano
 from ..protocol import MODES_BY_KEY, TRIGGER_MODES
 from ..session import Session
 from ..tester import BUTTONS, DRIFT_TEXT, Tester
@@ -99,6 +99,12 @@ class Janela(QMainWindow):
         self.historico_refresh()
         self.session.loop.timeout_add_seconds(60, lambda: self.historico_refresh() or True)
         self.session.start()
+
+    def _iniciar_com_sistema(self, on):
+        try:
+            segundo_plano.definir("dualsense-painel", on)
+        except OSError as e:
+            self.toast(f"Não consegui mudar: {e.strerror or e}")
 
     def toast(self, text):
         self.statusBar().showMessage(text, 2500 if len(text) < 60 else 8000)
@@ -266,6 +272,18 @@ class Janela(QMainWindow):
         self.off_row = row("Desligar controle", off, "Desconecta do Bluetooth e desliga")
         self.off_row.setVisible(False)
         lay.addWidget(self.off_row)
+        fundo = QCheckBox()
+        fundo.setChecked(self.cfg["segundo_plano"])
+        fundo.toggled.connect(lambda on: self._set("segundo_plano", on))
+        lay.addWidget(row("Continuar rodando ao fechar a janela", fundo,
+                          "Modo carregar automático, avisos de bateria e atalho seguem funcionando"))
+        inicio = QCheckBox()
+        inicio.setChecked(segundo_plano.ativo("dualsense-painel"))
+        inicio.toggled.connect(self._iniciar_com_sistema)
+        lay.addWidget(row("Iniciar com o sistema", inicio, "Abre escondido ao entrar na sua conta"))
+        sair = QPushButton("Sair")
+        sair.clicked.connect(self.app_ctl.quit)
+        lay.addWidget(row("Sair do app", sair, "Fecha de vez, inclusive em segundo plano"))
         procurar = QPushButton("Procurar atualizações")
         procurar.clicked.connect(self.app_ctl.procurar_versao)
         lay.addWidget(row("Versão do app", procurar, VERSAO if VERSAO != "0.0.0" else "Rodando pelo código"))
@@ -871,10 +889,10 @@ class Janela(QMainWindow):
             self.toast("Copiado")
 
     def closeEvent(self, event):
-        if self.session.charging_mode and self.session.connected and self.app_ctl.tray_available():
+        if self.cfg["segundo_plano"] or (self.session.charging_mode and self.session.connected):
             event.ignore()
             self.hide()
-            self.app_ctl.notify("Modo carregar continua ligado", "O painel segue na bandeja do sistema.")
+            self.app_ctl.avisar_fundo()
             return
         self.stop_mic()
         self.session.cleanup()

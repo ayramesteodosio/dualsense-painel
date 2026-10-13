@@ -7,7 +7,7 @@ from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
-from .. import atualizacao, plataforma
+from .. import atualizacao, plataforma, segundo_plano
 from ..versao import VERSAO
 from ..session import acquire_lock
 
@@ -38,10 +38,11 @@ class _Aviso(QObject):
     progresso = Signal(float)
     baixado = Signal(str)
     falhou = Signal(str)
+    canal = Signal(str)
 
 
 class AppCtl:
-    def __init__(self, app, start_mode):
+    def __init__(self, app, start_mode, escondido=False):
         from .janela import Janela
         self.app = app
         self.icon = QIcon(resource("dados", APP_ID + ".svg"))
@@ -68,11 +69,14 @@ class AppCtl:
         self.server.listen(SERVER)
         self.server.newConnection.connect(self._command)
         self.window = Janela(self)
-        self.window.show()
+        if not escondido:
+            self.window.show()
         if start_mode is not None:
             QTimer.singleShot(1500, lambda: self.window.set_charging(start_mode))
         self._url_versao = None
+        self._avisou_fundo = False
         self.aviso = _Aviso()
+        self.aviso.canal.connect(lambda comando: self.show() if comando == "mostrar" else self.quit())
         self.aviso.pronto.connect(self._nova_versao)
         self.aviso.nada.connect(lambda achou: self.window.toast(atualizacao.texto_sem_novidade(achou, VERSAO)))
         self.aviso.progresso.connect(lambda f: self.window.progresso_versao(self._tag_versao, f))
@@ -121,6 +125,11 @@ class AppCtl:
     def _abrir_versao(self):
         if self._url_versao:
             QDesktopServices.openUrl(QUrl(self._url_versao))
+
+    def avisar_fundo(self):
+        if not self._avisou_fundo:
+            self._avisou_fundo = True
+            self.notify("O painel continua rodando", "Ele segue na bandeja do sistema. Para fechar de vez, use Sair.")
 
     def tray_available(self):
         return self.tray is not None
@@ -177,7 +186,8 @@ def main(argv=None):
     mode = True if "--carregar" in argv else False if "--normal" in argv else None
     QApplication.setApplicationName("Painel do DualSense")
     QApplication.setDesktopFileName(APP_ID)
-    app = QApplication([a for a in argv if a not in ("--carregar", "--normal")])
+    escondido = segundo_plano.FLAG in argv
+    app = QApplication([a for a in argv if a not in ("--carregar", "--normal", segundo_plano.FLAG)])
     if plataforma.WINDOWS:
         app.setStyle("Fusion")
     traducao = QTranslator(app)
@@ -186,12 +196,17 @@ def main(argv=None):
     app.setQuitOnLastWindowClosed(False)
     lock = acquire_lock()
     if lock is None:
+        if escondido:
+            return 0
         if send_command({True: "carregar", False: "normal"}.get(mode, "mostrar")):
             return 0
-        QMessageBox.information(None, "Painel do DualSense", "O controle já está sendo usado pelo DualSense Studio. "
-                                                             "Feche ele para usar o painel.")
-        return 1
-    ctl = AppCtl(app, mode)
+        estado, lock = segundo_plano.obter_controle("dualsense-painel")
+        if estado != "livre":
+            QMessageBox.information(None, "Painel do DualSense", "Não consegui assumir o controle. Feche o outro app "
+                                                                 "do DualSense e tente de novo.")
+            return 1
+    ctl = AppCtl(app, mode, escondido)
+    segundo_plano.Canal("dualsense-painel", lock, ctl.aviso.canal.emit)
     signal.signal(signal.SIGINT, lambda *_: ctl.quit())
     signal.signal(signal.SIGTERM, lambda *_: ctl.quit())
     keepalive = QTimer()

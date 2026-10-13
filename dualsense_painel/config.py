@@ -17,6 +17,7 @@ DEFAULTS = {
     "shortcut": True,
     "low_battery": 20,
     "idle_off": 0,
+    "segundo_plano": True,
     "profiles": {},
     **charge_light.DEFAULTS,
     "triggers": {"l2": {"mode": "off", "params": {}}, "r2": {"mode": "off", "params": {}}},

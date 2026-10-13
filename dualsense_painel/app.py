@@ -8,9 +8,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from . import atualizacao, charge_light, config
+from . import atualizacao, charge_light, config, segundo_plano
 from .protocol import MODES_BY_KEY, TRIGGER_MODES
-from .session import Session, acquire_lock
+from .session import Session
 from .versao import VERSAO
 from .telas.ajustes import AjustesGroup, HistoricoGroup
 from .telas.info import InfoPage
@@ -545,7 +545,7 @@ class Window(Adw.ApplicationWindow):
         return False
 
     def _on_close(self, _window):
-        if self.session.charging_mode and self.session.connected:
+        if self.cfg["segundo_plano"] or (self.session.charging_mode and self.session.connected):
             self.set_visible(False)
             self.app.hold_in_background()
             return True
@@ -561,6 +561,8 @@ class App(Adw.Application):
         self._held = False
         self._lock = None
         self.start_charging = False
+        self.escondido = False
+        self._avisou_fundo = False
         self._url_versao = None
         self._checando = False
         for name, on in (("carregar", True), ("normal", False)):
@@ -578,7 +580,8 @@ class App(Adw.Application):
     def _busy(self):
         dialog = Gtk.MessageDialog(message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE,
                                    text="O controle já está sendo usado",
-                                   secondary_text="O DualSense Studio está aberto. Feche ele para usar o painel.")
+                                   secondary_text="Não consegui assumir o controle. Feche o outro app do DualSense e "
+                                                  "tente de novo.")
         self.add_window(dialog)
         dialog.connect("response", lambda d, _r: d.destroy())
         dialog.present()
@@ -604,21 +607,39 @@ class App(Adw.Application):
 
     def do_activate(self):
         if not self.window and not self._lock:
-            self._lock = acquire_lock()
-            if self._lock is None:
-                self._busy()
+            estado, self._lock = segundo_plano.obter_controle("dualsense-painel", escondido=self.escondido)
+            if estado != "livre":
+                if not self.escondido:
+                    self._busy()
                 return
+            segundo_plano.Canal("dualsense-painel", self._lock,
+                                lambda comando: GLib.idle_add(self._comando_canal, comando))
         if not self.window:
             self.window = Window(self)
-        if not self._checando:
-            self._checando = True
-            GLib.timeout_add_seconds(5, self._checar_versao)
-            GLib.timeout_add_seconds(24 * 3600, self._checar_versao, True)
+            if self.escondido:
+                self.escondido = False
+                self.hold_in_background(avisar=False)
+                self._iniciar_checagem()
+                return
+        self._iniciar_checagem()
         if self._held:
             self.release()
             self._held = False
         self.window.set_visible(True)
         self.window.present()
+
+    def _iniciar_checagem(self):
+        if not self._checando:
+            self._checando = True
+            GLib.timeout_add_seconds(5, self._checar_versao)
+            GLib.timeout_add_seconds(24 * 3600, self._checar_versao, True)
+
+    def _comando_canal(self, comando):
+        if comando == "mostrar":
+            self.activate()
+        else:
+            self.quit()
+        return False
 
     def _checar_versao(self, repetir=False):
         atualizacao.verificar("dualsense-painel", VERSAO,
@@ -676,12 +697,15 @@ class App(Adw.Application):
             GLib.idle_add(mostrar)
         atualizacao.baixar("dualsense-painel", tag, progresso, pronto, falhou)
 
-    def hold_in_background(self):
+    def hold_in_background(self, avisar=True):
         if not self._held:
             self.hold()
             self._held = True
-            n = Gio.Notification.new("Modo carregar continua ligado")
-            n.set_body("Abra o Painel do DualSense de novo para voltar ao modo normal.")
+        if avisar and not self._avisou_fundo:
+            self._avisou_fundo = True
+            n = Gio.Notification.new("O painel continua rodando")
+            n.set_body("Abra o Painel do DualSense pelo menu para ver a janela. Para fechar de vez, "
+                       "use Sair do app nos Ajustes.")
             self.send_notification("segundo-plano", n)
 
 
@@ -689,8 +713,13 @@ def main():
     GLib.set_prgname(APP_ID)
     GLib.set_application_name("Painel do DualSense")
     app = App()
-    argv = [a for a in sys.argv if a not in ("--carregar", "--normal")]
+    argv = [a for a in sys.argv if a not in ("--carregar", "--normal", segundo_plano.FLAG)]
     mode = "carregar" if "--carregar" in sys.argv else "normal" if "--normal" in sys.argv else None
+    if segundo_plano.FLAG in sys.argv:
+        app.register(None)
+        if app.get_is_remote():
+            return 0
+        app.escondido = True
     if mode:
         app.register(None)
         if app.get_is_remote():

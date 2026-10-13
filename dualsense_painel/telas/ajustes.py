@@ -1,4 +1,8 @@
+import os
+
 from gi.repository import Adw, Gtk
+
+from .. import segundo_plano
 
 from ..versao import VERSAO
 from .historico import BatteryChart, duration
@@ -65,11 +69,39 @@ class AjustesGroup:
         self.off_row.set_visible(False)
         self.widget.add(self.off_row)
 
+        fundo = Adw.ActionRow(title="Continuar rodando ao fechar a janela",
+                              subtitle="Modo carregar automático, avisos de bateria e atalho seguem funcionando")
+        fundo_sw = Gtk.Switch(valign=Gtk.Align.CENTER, active=cfg["segundo_plano"])
+        fundo_sw.connect("notify::active", self._set, "segundo_plano", lambda w: w.get_active())
+        fundo.add_suffix(fundo_sw)
+        fundo.set_activatable_widget(fundo_sw)
+        self.widget.add(fundo)
+
+        inicio = Adw.ActionRow(title="Iniciar com o sistema", subtitle="Abre escondido ao entrar na sua conta")
+        self.inicio_sw = Gtk.Switch(valign=Gtk.Align.CENTER, active=segundo_plano.ativo("dualsense-painel"))
+        self.inicio_sw.connect("notify::active", self._iniciar_com_sistema)
+        inicio.add_suffix(self.inicio_sw)
+        inicio.set_activatable_widget(self.inicio_sw)
+        self.widget.add(inicio)
+
+        sair = Adw.ActionRow(title="Sair do app", subtitle="Fecha de vez, inclusive em segundo plano")
+        sair_botao = Gtk.Button(label="Sair", valign=Gtk.Align.CENTER)
+        sair_botao.connect("clicked", lambda *_: self.win.get_application().quit())
+        sair.add_suffix(sair_botao)
+        self.widget.add(sair)
+
         versao = Adw.ActionRow(title="Versão do app", subtitle=VERSAO if VERSAO != "0.0.0" else "Rodando pelo código")
         procurar = Gtk.Button(label="Procurar atualizações", valign=Gtk.Align.CENTER)
         procurar.connect("clicked", lambda *_: self.win.get_application().procurar_versao())
         versao.add_suffix(procurar)
         self.widget.add(versao)
+
+    def _iniciar_com_sistema(self, widget, _pspec):
+        raiz = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        try:
+            segundo_plano.definir("dualsense-painel", widget.get_active(), raiz)
+        except OSError as e:
+            self.win.toast(f"Não consegui mudar: {e.strerror}")
 
     def _set(self, widget, _pspec, key, getter):
         self.win.cfg[key] = getter(widget)

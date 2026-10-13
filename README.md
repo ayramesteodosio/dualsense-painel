@@ -24,6 +24,10 @@ No Linux a interface é GTK4 com libadwaita. No Windows e no macOS é Qt, com as
 - Informações: modelo, cor de fábrica, placa (BDM), número de série, firmware, hardware e MAC.
 - Perfis, histórico de bateria, aviso de bateria baixa, atalho PS + Options para o modo carregar e
   desligamento por inatividade no Bluetooth.
+- Segundo plano: ao fechar a janela o app continua rodando (dá para desligar nos Ajustes), com modo
+  carregar automático, avisos de bateria e atalho funcionando. "Iniciar com o sistema" é opcional, no
+  instalador do Windows ou nos Ajustes. Só um app usa o controle por vez: abrir o outro faz o primeiro
+  soltar o controle e fechar.
 
 O [DualSense Studio](https://github.com/ayramesteodosio/dualsense-studio) usa este mesmo código com
 outra interface.
